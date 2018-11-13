@@ -4,13 +4,15 @@ CREATE TABLE IF NOT EXISTS Products(
     pName varchar(32),
     stock int,
     price int,
+    desc varchar(255),
+    pic varchar(255),
     ID int,
     PRIMARY KEY (ID)
 );
 
 CREATE TABLE IF NOT EXISTS Users(
-	fName varchar(32),
-    LName varchar(32),
+    fName varchar(32),
+    lName varchar(32),
     email varchar(64),
     pWord varchar(64),
     adress varchar(64),
