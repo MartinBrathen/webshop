@@ -53,11 +53,11 @@ CREATE TABLE IF NOT EXISTS Transactions(
 );
 
 CREATE TABLE IF NOT EXISTS Comments(
-    commentS varchar(256),
+    comments varchar(256),
     userID int,
     productID int,
     ID int,
-    PRIMARY KEY(ID),
+    PRIMARY KEY (ID),
     FOREIGN KEY (userID) REFERENCES Users(ID),
     FOREIGN KEY (productID) REFERENCES Products(ID)
 );
@@ -68,5 +68,21 @@ CREATE TABLE IF NOT EXISTS Ratings(
     productID int,
     PRIMARY KEY(userID,productID),
     FOREIGN KEY (userID) REFERENCES Users(ID),
+    FOREIGN KEY (productID) REFERENCES Products(ID)
+);
+
+CREATE TABLE IF NOT EXISTS Keywords(
+    keyword varchar(32),
+    ID int,
+    PRIMARY KEY(ID)
+);
+
+
+CREATE TABLE IF NOT EXISTS KeywordRelation(
+    ID int,
+    productID int,
+    keywordID int,
+    PRIMARY KEY(ID),
+    FOREIGN KEY (keywordID) REFERENCES Keywords(ID),
     FOREIGN KEY (productID) REFERENCES Products(ID)
 );
