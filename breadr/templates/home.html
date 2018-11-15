@@ -1,0 +1,40 @@
+{%extends "layout.html"%}
+{%block content%}
+	<h1>Browser</h1>
+<!--
+	<table class="table table-striped">
+		<thead>
+			<th>Name</th>
+			<th>Stock</th>
+		</thead>
+-->
+	{% for item in items%}
+<!--
+		<tr>
+			<td>{{ item.name }}</td>
+			<td>
+				{%if item.stock > 1%}
+					{{ item.stock }} items left in stock
+				{%else%}
+					<mark>only {{ item.stock }} item left in stock</mark>
+				{%endif%}
+			</td>
+		</tr>
+	-->
+		<div class="row">
+			<div class="col"><h2>{{ item.name }}</h2></div>
+			<div class="col">
+				{%if item.stock > 1%}
+					<p>{{ item.stock }} items left in stock</p>
+				{%else%}
+					<p><mark>only {{ item.stock }} item left in stock</mark></p>
+				{%endif%}
+			</div>
+		</div>
+		<div class="row">
+			<div class="col"><p>{{ item.desc }}</p></div>
+		</div>
+	
+	{% endfor %}
+	</table>
+{%endblock content%}
