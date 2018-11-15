@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS Products(
     pName varchar(32),
     stock int,
     price int,
-    desc varchar(255),
+    descr varchar(255),
     pic varchar(255),
     ID int,
     PRIMARY KEY (ID)
