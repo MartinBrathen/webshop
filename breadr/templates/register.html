@@ -1,4 +1,12 @@
 {%extends "layout.html"%}
 {%block content%}
-	<h1>welcome to the register page</h1>
+	<h1>register new account</h1>
+	<form>
+		First Name: <input type="text" name="fName" placeholder="john"><br>
+		Last Name: <input type="text" name="lName" placeholder="doe"><br>
+		E-mail: <input type="text" name="email" placeholder="johndoe@mail.com"><br>
+		Adress: <input type="text" name="addr" placeholder="roadstreet 42"><br>
+		Phone: <input type="text" name="phone" placeholder="123-4567890"><br>
+		<input type="submit" value="Submit">
+	</form>
 {%endblock content%}
