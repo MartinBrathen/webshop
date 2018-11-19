@@ -7,17 +7,20 @@ items = [
     {
         'name':u'mjukt bröd',
         'stock': 56,
-        'desc':u'det här brödet är inte hårt'
+        'desc':u'det här brödet är inte hårt',
+        'ID':1
     },
     {
         'name':u'hårt bröd',
         'stock': 999,
-        'desc':u'det här brödet är hårt'
+        'desc':u'det här brödet är hårt',
+        'ID':2
     },
     {
         'name':u'gammalt bröd',
         'stock': 1,
-        'desc':u'köp på egen risk'
+        'desc':u'köp på egen risk',
+        'ID':3
     }
 ]
 
@@ -34,6 +37,12 @@ def register():
 def login():
     return render_template('login.html')
 
+@app.route("/product/<int:productID>")
+def product(productID):
+    for item in items:
+        if item['ID'] == productID:
+            return render_template('product.html', product=item)
+    return "{} is not a valid product ID".format(productID)
 
 if __name__ == '__main__':
     app.run(debug = True)
