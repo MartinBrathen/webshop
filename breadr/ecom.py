@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 app = Flask(__name__)
 
 items = [
@@ -43,6 +43,12 @@ def product(productID):
         if item['ID'] == productID:
             return render_template('product.html', product=item)
     return "{} is not a valid product ID".format(productID)
+    
+@app.route('/result',methods = ['POST', 'GET'])
+def result():
+   if request.method == 'POST':
+      result = request.form
+      return render_template("result.html",result = result)
 
 if __name__ == '__main__':
     app.run(debug = True)
