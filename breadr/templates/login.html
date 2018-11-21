@@ -1,9 +1,17 @@
 {%extends "layout.html"%}
 {%block content%}
 	<h1>login to start your breaded journey</h1>
-	<form>
-		E-mail: <input type="text" name="email" placeholder="johndoe@mail.com"><br>
-		password: <input type="password" name="pass"><br>
-		<input type="submit" value="Submit"><br>
+	<form method="POST" action="">
+		E-mail<br>
+		<input type="text" name="email" placeholder="johndoe@mail.com" pattern="[^\s]+@[^\s]+\.[^\s]+" required><br>
+		{%if emailmsg%}
+			{{emailmsg}}<br>
+		{%endif%}
+		password<br>
+		<input type="password" name="pass"><br>	
+		{%if passwmsg%}
+			{{passwmsg}}<br>
+		{%endif%}
+		<input type="submit" value="Login!">
 	</form>
 {%endblock content%}

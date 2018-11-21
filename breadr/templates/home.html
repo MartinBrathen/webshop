@@ -2,18 +2,24 @@
 {%block content%}
 	<h1>Browser</h1>
 	{% for item in items%}
-		<div class="row item">
-			<div class="col"><a href="/product/{{ item.ID }}"><h2>{{ item.name }}</h2></a></div>
-			<div class="col">
-				{%if item.stock > 1%}
-					<p>{{ item.stock }} items left in stock</p>
-				{%else%}
-					<p><mark>only {{ item.stock }} item left in stock</mark></p>
-				{%endif%}
+		<div class="item">
+			<div class="row">
+				<!--<div class="col"><a href="/product/{{ item.ID }}"><h2>{{ item.name }}</h2></a></div>
+				-->
+				<div class="col"><a href="{{ url_for('product', productID=item.ID) }}"><h2>{{ item.name }}</h2></a></div>
+				<div class="col">
+					{%if item.stock > 1%}
+						<p>{{ item.stock }} items left in stock</p>
+					{%else%}
+						<p>only {{ item.stock }} item left in stock</p>
+					{%endif%}
+				</div>
 			</div>
-		</div>
-		<div class="row">
-			<div class="col"><p>{{ item.desc }}</p></div>
+			<div class="row">
+				<div class="col">
+					<p>{{ item.desc }}</p>
+				</div>
+			</div>
 		</div>
 	{% endfor %}
 	</table>
