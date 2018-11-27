@@ -18,19 +18,27 @@
 	{% endif %}
 </head>
 <body>
-	<div class="row">
-		<div class="col"><a href="{{ url_for('home') }}">home</a></div>
-		{%if session['ID']%}
-			<div class="col">logged in as {{session['ID']}}, <a href="{{ url_for('logout') }}">logout</a></div>
-		{%else%}
-			<div class="col"><a href="{{ url_for('register') }}">register</a></div>
-			<div class="col"><a href="{{ url_for('login') }}">login</a></div>
-		{%endif%}
-	</div>
+	<!-- NAVBAR -->
+	<nav class="navbar navbar-expand-sm">
+			<a class="navbar-brand" href="{{ url_for('home') }}">köpa bröd</a>
+			<ul class="navbar-nav ml-auto">
+			{%if session['ID']%}
+				<li class="nav-item"><a class="nav-link" href="#">Account({{ session['ID'] }})</a></li>
+				<li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">logout</a></li>
+				
+			{%else%}
+				<li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">register</a></li>
+				<li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">login</a></li>
+			{%endif%}
+			</ul>
+
+	</nav>
+	
+	
 	{% with messages = get_flashed_messages() %}
 		<div class="container">
 		{%for message in messages%}
-			<p>{{message}}</p>
+			<div class="alert alert-success">{{message}}</div>
 		{%endfor%}
 		</div>
 	{% endwith %}

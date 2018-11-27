@@ -3,15 +3,19 @@
 	<h1>login to start your breaded journey</h1>
 	<form method="POST" action="">
 		E-mail<br>
-		<input type="text" name="email" placeholder="johndoe@mail.com" pattern="[^\s]+@[^\s]+\.[^\s]+" required><br>
+		{% if email %}<input type="text" name="email" value="{{ email }}" pattern="[^\s]+@[^\s]+\.[^\s]+" required><br>
+		{% else     %}<input type="text" name="email" placeholder="johndoe@mail.com" pattern="[^\s]+@[^\s]+\.[^\s]+" required><br>
+		{% endif %}
+		
 		{%if emailmsg%}
-			{{emailmsg}}<br>
+			<div class="alert alert-danger">{{emailmsg}}</div>
 		{%endif%}
 		password<br>
 		<input type="password" name="pass"><br>	
 		{%if passwmsg%}
-			{{passwmsg}}<br>
+			<div class="alert alert-danger">{{passwmsg}}</div>
 		{%endif%}
 		<input type="submit" value="Login!">
 	</form>
+	Don't have an account? <a href="{{ url_for('register') }}">Register here</a>
 {%endblock content%}

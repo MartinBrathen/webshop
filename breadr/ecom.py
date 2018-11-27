@@ -4,12 +4,12 @@ from flask import Flask, render_template, url_for, request, redirect, flash, ses
 import mysql.connector
 
 app = Flask(__name__)
-app.secret_key = "0ul9oiewdsrukoiwsze"
+app.secret_key = "0ul9oiewdsrukoiwsze" #generera säker nyckel
 
 '''
 db = mysql.connector.connect(
     host="130.240.200.70",
-    port="51322",
+    port=51322,
     user="root",
     passwd="D0018Epassword",
     database="webshopDB"
@@ -74,10 +74,9 @@ def register():
     
     if request.method =='POST':
         f = request.form
-        sql = "insert into users (email, pWord) values (%s, %s);"
-        val = (f['email'], f['pass'])
+        sql = "insert into Users (email, pWord, admin) values (%s, %s, %s);"
+        val = (f['email'], f['pass'], 1 if f['email'] == 'admin@admin.admin' else 0)
         try:
-            print(sql, val)
             c.execute(sql, val)
             db.commit()
             
@@ -99,21 +98,23 @@ def login():
     if request.method == 'POST':
         femail = request.form['email']
         fpassw = request.form['pass']
-        sql = "select pWord, ID from users where email = %s;"
+        sql = "select pWord, ID, admin from Users where email = %s;"
         c.execute(sql, (femail,))
         
         result = c.fetchone()
         if result:
-            if result[0] == fpassw:
-                flash('Successfully logged in')
+            if result[0] == fpassw:             
+                session['admin'] = result[2]       
+                flash('Successfully logged in{}'.format(' as admin' if result[2] == 1 else ''))
                 session['ID'] = result[1]
+                
                 return redirect(url_for('home'))
                                 
             else:
-                return render_template('login.html', passwmsg='wrong password')
+                return render_template('login.html', passwmsg='wrong password', email = femail)
 
         else:
-            return render_template('login.html', emailwmsg='wrong email')
+            return render_template('login.html', emailmsg='wrong email')
         
         
         
@@ -132,6 +133,7 @@ def product(productID):
 @app.route("/logout")
 def logout():
     session.pop('ID', None)
+    session.pop('admin', None)
     return redirect(url_for('home'))
 
 if __name__ == '__main__':
