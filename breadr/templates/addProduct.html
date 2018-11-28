@@ -1,0 +1,22 @@
+{%extends "layout.html"%}
+{%block content%}
+	<h1>Add New Item</h1>
+	<form method="POST" action="">
+		pName<br>
+		<input type="text" name="pName" required><br>
+		
+		stock<br>
+		<input type="number" name="stock" required><br>
+		
+		price<br>
+		<input type="number" name="price" required><br>
+		
+		descr<br>
+		<input type="text" name="descr"><br>
+		
+		pic<br>
+		<input type="text" name="pic"><br>
+		
+		<input type="submit" value="Submit">
+	</form>
+{%endblock content%}

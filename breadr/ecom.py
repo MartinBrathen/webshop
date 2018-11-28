@@ -40,36 +40,55 @@ c.execute("""CREATE TABLE IF NOT EXISTS Users(
     UNIQUE (email)
 );""")
 
+c.execute("""CREATE TABLE IF NOT EXISTS Products(
+    pName varchar(32),
+    stock int,
+    price int,
+    descr varchar(255),
+    pic varchar(255),
+    ID int AUTO_INCREMENT,
+    PRIMARY KEY (ID)
+);""")
 
+'''
 items = [
     {
-        'name':u'mjukt bröd',
+        'pName':u'mjukt bröd',
         'stock': 56,
         'desc':u'det här brödet är inte hårt',
         'ID':1
     },
     {
-        'name':u'hårt bröd',
+        'pName':u'hårt bröd',
         'stock': 999,
         'desc':u'det här brödet är hårt',
         'ID':2
     },
     {
-        'name':u'gammalt bröd',
+        'pName':u'gammalt bröd',
         'stock': 1,
         'desc':u'köp på egen risk',
         'ID':3
     }
 ]
+'''
 
 @app.route("/")
 @app.route("/home")
 def home():
+    c.execute("""select * from Products;""")
+    items = []
+    keys = ('pName', 'stock', 'price', 'descr', 'pic', 'ID')
+    for fitem in c.fetchall():
+        items.append(dict(zip(keys, fitem)))
+    print(items)
     return render_template('home.html', items=items)
+
 
 @app.route("/register", methods=['GET','POST'])
 def register():
     if 'id' in session:
+        flash('you already have an account', 'danger')
         return redirect(url_for('home'))
     
     if request.method =='POST':
@@ -83,7 +102,7 @@ def register():
         except mysql.connector.Error as err:
             return render_template('register.html', error=err)#SKICKA INTE ERR UTAN ETT BÄTTRE MEDDELANDE
                       
-        flash('User successfully created! customer id: {}'.format(c.lastrowid))
+        flash('User successfully created! customer id: {}'.format(c.lastrowid), 'success')
         return redirect(url_for('login'))
         
     return render_template('register.html', title='Ooh new member')
@@ -92,21 +111,24 @@ def register():
 
 @app.route("/login", methods=['GET','POST'])
 def login():
-    if 'id' in session:
+    if 'ID' in session:
+        flash('you are already logged in', 'danger')
         return redirect(url_for('home'))
         
-    if request.method == 'POST':
+    elif request.method == 'POST':
         femail = request.form['email']
         fpassw = request.form['pass']
         sql = "select pWord, ID, admin from Users where email = %s;"
         c.execute(sql, (femail,))
         
-        result = c.fetchone()
+        result = c.fetchone()#gör solution med dict
+        print("result: {}".format(result))
         if result:
             if result[0] == fpassw:             
-                session['admin'] = result[2]       
-                flash('Successfully logged in{}'.format(' as admin' if result[2] == 1 else ''))
+                session['admin'] = result[2]
+                flash('Successfully logged in{}'.format(' as admin' if result[2] == 1 else ''), 'success')
                 session['ID'] = result[1]
+                print("admin: {}, id: {}".format(session['admin'], session['ID']))
                 
                 return redirect(url_for('home'))
                                 
@@ -125,16 +147,81 @@ def login():
 
 @app.route("/product/<int:productID>")
 def product(productID):
+    '''
     for item in items:
         if item['ID'] == productID:
             return render_template('product.html', product=item)
-    return "{} is not a valid product ID".format(productID)
+    '''
+    sql = "select * from Products where ID=%s;"
+    c.execute(sql, (productID,))
+    result = c.fetchone()
+    if result:
+        keys = ('pName', 'stock', 'price', 'descr', 'pic', 'ID')
+        return render_template('product.html', product=dict(zip(keys, result)))
+    else:
+        return "{} is not a valid product ID".format(productID)
 
 @app.route("/logout")
 def logout():
     session.pop('ID', None)
     session.pop('admin', None)
     return redirect(url_for('home'))
+
+@app.route("/addProduct", methods=['GET','POST'])
+def addProduct():
+    #endast admin får vara på denna sida
+    if 'ID' in session and session['admin'] == 1:
+        if request.method == 'POST':
+
+            f = request.form
+            print(f)
+            targets = ()
+            entrys = ()
+            val = ()
+            for info in f:
+                if f[info] != '':
+                    targets += (info,)
+                    entrys += ('%s',)
+                    if info == 'price' or info == 'stock':
+                        val += (int(f[info]),)
+                    else:
+                        val += (f[info],)
+            sql = "insert into Products {} values {};".format(targets, entrys).replace("'", "")
+            print(sql)
+            print(val)
+            c.execute(sql, val)
+            db.commit()
+            
+        return render_template('addProduct.html')
+    else:
+        flash('you do not have access to that page', 'danger')
+        return redirect(url_for('home'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug = True)

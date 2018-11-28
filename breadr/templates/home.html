@@ -1,12 +1,18 @@
 {%extends "layout.html"%}
 {%block content%}
 	<h1>Browser</h1>
+	<div class="row">
+		<div class="col">name</div>
+		<div class="col">stock</div>
+		<div class="col">price</div>
+		<div class="col">ID</div>
+	</div>
 	{% for item in items%}
 		<div class="item">
 			<div class="row">
 				<!--<div class="col"><a href="/product/{{ item.ID }}"><h2>{{ item.name }}</h2></a></div>
 				-->
-				<div class="col"><a href="{{ url_for('product', productID=item.ID) }}"><h2>{{ item.name }}</h2></a></div>
+				<div class="col"><a href="{{ url_for('product', productID=item.ID) }}"><h2>{{ item.pName }}</h2></a></div>
 				<div class="col">
 					{%if item.stock > 1%}
 						<p>{{ item.stock }} items left in stock</p>
@@ -14,6 +20,8 @@
 						<p>only {{ item.stock }} item left in stock</p>
 					{%endif%}
 				</div>
+				<div class="col">{{item.price/100}}kr</div>
+				<div class="col">{{item.ID}}</div>
 			</div>
 			<div class="row">
 				<div class="col">
@@ -22,5 +30,9 @@
 			</div>
 		</div>
 	{% endfor %}
-	</table>
+	
+	{% if session['admin'] == 1%}
+		<a href="{{ url_for('addProduct') }}">add product</a>
+	{% endif %}
+	
 {%endblock content%}
