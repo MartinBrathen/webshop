@@ -19,9 +19,10 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    passwd="D0018Epass",
+    #passwd="pass",
     database="webshopDB"
 )
+
 c = db.cursor()
 
 c.execute("CREATE DATABASE IF NOT EXISTS webshopDB")
@@ -54,8 +55,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS Basket(
     userID int,
     productID int,
     amount int,
-    ID int,
-    PRIMARY KEY (ID),
+    PRIMARY KEY (userID,productID),
     FOREIGN KEY (userID) REFERENCES Users(ID),
     FOREIGN KEY (productID) REFERENCES Products(ID)
 );""")
@@ -69,6 +69,15 @@ c.execute("""CREATE TABLE IF NOT EXISTS Ratings(
     FOREIGN KEY (productID) REFERENCES Products(ID)
 );""")
 
+c.execute("""CREATE TABLE IF NOT EXISTS Comments(
+    comment varchar(256),
+    userID int,
+    productID int,
+    ID int AUTO_INCREMENT,
+    PRIMARY KEY (ID),
+    FOREIGN KEY (userID) REFERENCES Users(ID),
+    FOREIGN KEY (productID) REFERENCES Products(ID)
+);""")
 
 @app.route("/")
 @app.route("/home")
@@ -167,6 +176,12 @@ def product(productID):
             if ID == userID:
                 my_rating = rating
 
+        c.execute("""select * from Comments where productID = %s;""", (productID,))
+        comments = []
+        keys = ('comment', 'userID', 'productID', 'ID')
+        for comment in c.fetchall():
+            comments.append(dict(zip(keys, comment)))
+
         if 'ID' in session:  
             if request.method == 'POST':
                 vote_sql = """insert into Ratings (rating, userID, productID) values (%s, %s, %s) 
@@ -188,14 +203,28 @@ def product(productID):
                     db.commit()
                     return redirect(url_for('product', productID=productID))
 
-                    
-
                 elif 'buy' in request.form:
                     #place in cart code
-                    print("BUY:)")
+                    f = request.form
+                    quantity = int(dict(f)['quantity'][0])
+                    sql = """insert into Basket (userID, productID, amount) values (%s, %s, %s) 
+                    on duplicate key update amount = amount + %s;"""
+                    val = (session['ID'], productID, quantity, quantity)
+                    c.execute(sql, val)
+                    db.commit()
+                    return redirect(url_for('product', productID=productID))
+
+                elif 'comment' in request.form:
+                    comment = dict(request.form)['comment'][0]
+                    sql = """insert into Comments (comment, userID, productID) values (%s, %s, %s);"""
+                    val = (comment, session['ID'], productID)
+                    c.execute(sql, val)
+                    db.commit()
+                    return redirect(url_for('product', productID=productID))
 
 
-        return render_template('product.html', product=product, rating = tot_rating, my_rating = my_rating)
+
+        return render_template('product.html', product=product, rating = tot_rating, my_rating = my_rating, comments = comments)
     else:
         return "{} is not a valid product ID".format(productID)
 

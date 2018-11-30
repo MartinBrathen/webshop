@@ -10,33 +10,50 @@
 	---->
 	<div class="row">
 		<div class="col">
-			<img src="{{ product.pic }}" alt="imagine bread being here" class="img-thumbnail img-fluid">
+			{%if product.pic%}
+				<img src="{{ product.pic }}" alt="{{ product.pic }}" class="img-thumbnail img-fluid">
+			{%else%}
+				<img src="https://cdn0.iconfinder.com/data/icons/foods-with-a-mustache/1200/fru-28-512.png" class="img-thumbnail img-fluid">
+			{%endif%}
 		</div>
 		<div class="col">
 			<h1>{{ product.pName }}</h1>
 			<p>{{ product.descr }}</p>			
-			<p>stock: {{product.stock}}</p>
+			<p class="martin">stock: {{product.stock}}</p>
 			<p>{{product.price/100}}kr</p>
+			<p>Rating: {{rating}}</p>
 			{% if session['ID']%}
 			<form method="post" action="">
 				{% if my_rating == 1%}
 					<button type="submit" class="btn btn-primary" name="up">updoot</button>
-					{{rating}}
 					<button type="submit" class="btn" name="down">downdoot</button>
 				{% elif my_rating == 0 %}
 					<button type="submit" class="btn" name="up">updoot</button>
-					{{rating}}
 					<button type="submit" class="btn btn-danger" name="down">downdoot</button>
 				{% else %}
 					<button type="submit" class="btn" name="up">updoot</button>
-					{{rating}}
 					<button type="submit" class="btn" name="down">downdoot</button>
 				{% endif %}
-				<input type="number" name="quatity">
+				<input type="number" name="quantity" value="1" required>
 				<button type="submit" class="btn" name="buy">place in cart</button>
 			</form>
 			{%endif%}
 		</div>
 	</div>
+	{%for comment in comments%}
+	<div>
+		<h4>user {{comment.userID}} commented</h4>
+		{{comment.comment}}
+	</div>
+	{%endfor%}
+	<fieldset>
+		<legend>Comment on this product</legend>
+		<form method="post" action="">
+			<textarea name="comment" style="width:100%;
+			height:100px;" required></textarea>
+			<button type="submit" class="btn btn-success" name="post">post</button>
+		</form>
+	</fieldset>
+
 	
 {%endblock content%}
