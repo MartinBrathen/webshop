@@ -14,11 +14,28 @@
 		</div>
 		<div class="col">
 			<h1>{{ product.pName }}</h1>
-			<p>{{ product.descr }}</p>
-			<div class="row align-items-end">
-				<div class="col">stock: {{product.stock}}</div>
-				<div class="col">{{product.price/100}}kr BUY</div>
-			</div>
+			<p>{{ product.descr }}</p>			
+			<p>stock: {{product.stock}}</p>
+			<p>{{product.price/100}}kr</p>
+			{% if session['ID']%}
+			<form method="post" action="">
+				{% if my_rating == 1%}
+					<button type="submit" class="btn btn-primary" name="up">updoot</button>
+					{{rating}}
+					<button type="submit" class="btn" name="down">downdoot</button>
+				{% elif my_rating == 0 %}
+					<button type="submit" class="btn" name="up">updoot</button>
+					{{rating}}
+					<button type="submit" class="btn btn-danger" name="down">downdoot</button>
+				{% else %}
+					<button type="submit" class="btn" name="up">updoot</button>
+					{{rating}}
+					<button type="submit" class="btn" name="down">downdoot</button>
+				{% endif %}
+				<input type="number" name="quatity">
+				<button type="submit" class="btn" name="buy">place in cart</button>
+			</form>
+			{%endif%}
 		</div>
 	</div>
 	

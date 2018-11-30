@@ -50,28 +50,25 @@ c.execute("""CREATE TABLE IF NOT EXISTS Products(
     PRIMARY KEY (ID)
 );""")
 
-'''
-items = [
-    {
-        'pName':u'mjukt bröd',
-        'stock': 56,
-        'desc':u'det här brödet är inte hårt',
-        'ID':1
-    },
-    {
-        'pName':u'hårt bröd',
-        'stock': 999,
-        'desc':u'det här brödet är hårt',
-        'ID':2
-    },
-    {
-        'pName':u'gammalt bröd',
-        'stock': 1,
-        'desc':u'köp på egen risk',
-        'ID':3
-    }
-]
-'''
+c.execute("""CREATE TABLE IF NOT EXISTS Basket(
+    userID int,
+    productID int,
+    amount int,
+    ID int,
+    PRIMARY KEY (ID),
+    FOREIGN KEY (userID) REFERENCES Users(ID),
+    FOREIGN KEY (productID) REFERENCES Products(ID)
+);""")
+
+c.execute("""CREATE TABLE IF NOT EXISTS Ratings(
+    rating bit,
+    userID int,
+    productID int,
+    PRIMARY KEY(userID,productID),
+    FOREIGN KEY (userID) REFERENCES Users(ID),
+    FOREIGN KEY (productID) REFERENCES Products(ID)
+);""")
+
 
 @app.route("/")
 @app.route("/home")
@@ -81,7 +78,6 @@ def home():
     keys = ('pName', 'stock', 'price', 'descr', 'pic', 'ID')
     for fitem in c.fetchall():
         items.append(dict(zip(keys, fitem)))
-    print(items)
     return render_template('home.html', items=items)
 
 
@@ -122,13 +118,13 @@ def login():
         c.execute(sql, (femail,))
         
         result = c.fetchone()#gör solution med dict
-        print("result: {}".format(result))
+
         if result:
             if result[0] == fpassw:             
                 session['admin'] = result[2]
                 flash('Successfully logged in{}'.format(' as admin' if result[2] == 1 else ''), 'success')
                 session['ID'] = result[1]
-                print("admin: {}, id: {}".format(session['admin'], session['ID']))
+
                 
                 return redirect(url_for('home'))
                                 
@@ -145,19 +141,61 @@ def login():
 
 
 
-@app.route("/product/<int:productID>")
+@app.route("/product/<int:productID>", methods=['GET', 'POST'])
 def product(productID):
-    '''
-    for item in items:
-        if item['ID'] == productID:
-            return render_template('product.html', product=item)
-    '''
     sql = "select * from Products where ID=%s;"
     c.execute(sql, (productID,))
-    result = c.fetchone()
-    if result:
+    product = c.fetchone()
+    
+    if product:
         keys = ('pName', 'stock', 'price', 'descr', 'pic', 'ID')
-        return render_template('product.html', product=dict(zip(keys, result)))
+
+        product=dict(zip(keys, product))
+        tot_rating = 0
+        my_rating = None
+        userID = None
+        if 'ID' in session:
+            userID = session['ID']
+
+        sql="select rating, userID from Ratings where productID = %s"
+        c.execute(sql, (productID,))
+        ratings = c.fetchall()
+        for rating, ID in ratings:
+            if rating != None:
+                tot_rating += 2*rating-1
+                
+            if ID == userID:
+                my_rating = rating
+
+        if 'ID' in session:  
+            if request.method == 'POST':
+                vote_sql = """insert into Ratings (rating, userID, productID) values (%s, %s, %s) 
+                    on duplicate key update rating = %s;""" 
+
+                if 'up' in request.form:
+                    #updoot code
+                    my_rating = None if my_rating == 1 else 1
+                    val=(1, session['ID'], productID, my_rating)
+                    c.execute(vote_sql,val)
+                    db.commit()
+                    return redirect(url_for('product', productID=productID))
+
+                elif 'down' in request.form:
+                    #downdoot code
+                    my_rating = None if my_rating == 0 else 0
+                    val=(0, session['ID'], productID, my_rating)
+                    c.execute(vote_sql,val)
+                    db.commit()
+                    return redirect(url_for('product', productID=productID))
+
+                    
+
+                elif 'buy' in request.form:
+                    #place in cart code
+                    print("BUY:)")
+
+
+        return render_template('product.html', product=product, rating = tot_rating, my_rating = my_rating)
     else:
         return "{} is not a valid product ID".format(productID)
 
@@ -174,7 +212,6 @@ def addProduct():
         if request.method == 'POST':
 
             f = request.form
-            print(f)
             targets = ()
             entrys = ()
             val = ()
@@ -187,8 +224,6 @@ def addProduct():
                     else:
                         val += (f[info],)
             sql = "insert into Products {} values {};".format(targets, entrys).replace("'", "")
-            print(sql)
-            print(val)
             c.execute(sql, val)
             db.commit()
             
