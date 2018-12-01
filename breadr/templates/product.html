@@ -41,9 +41,17 @@
 		</div>
 	</div>
 	{%for comment in comments%}
-	<div>
-		<h4>user {{comment.userID}} commented</h4>
-		{{comment.comment}}
+	<div class="item">
+		<div class="row">
+			<div class="col">
+				<div class="row">
+					<div class="col"><b>{{comment.email}}, {{comment.tStamp}}</b></div>
+				</div>
+				<div class="row">
+					<div class="col"><p>{{comment.comment}}</p></div>
+				</div>
+			</div>
+		</div>
 	</div>
 	{%endfor%}
 	<fieldset>

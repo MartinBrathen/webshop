@@ -19,7 +19,8 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    #passwd="pass",
+    #passwd="",
+    passwd="D0018Epass",
     database="webshopDB"
 )
 
@@ -74,6 +75,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS Comments(
     userID int,
     productID int,
     ID int AUTO_INCREMENT,
+    tStamp TIMESTAMP DEFAULT current_timestamp,
     PRIMARY KEY (ID),
     FOREIGN KEY (userID) REFERENCES Users(ID),
     FOREIGN KEY (productID) REFERENCES Products(ID)
@@ -98,15 +100,13 @@ def register():
     
     if request.method =='POST':
         f = request.form
+        c.execute("select * from Users where email = %s;", (f['email'],))
+        if c.fetchone():
+            return render_template('register.html', error="email already taken")
         sql = "insert into Users (email, pWord, admin) values (%s, %s, %s);"
         val = (f['email'], f['pass'], 1 if f['email'] == 'admin@admin.admin' else 0)
-        try:
-            c.execute(sql, val)
-            db.commit()
-            
-        except mysql.connector.Error as err:
-            return render_template('register.html', error=err)#SKICKA INTE ERR UTAN ETT BÄTTRE MEDDELANDE
-                      
+        c.execute(sql, val)
+        db.commit()                   
         flash('User successfully created! customer id: {}'.format(c.lastrowid), 'success')
         return redirect(url_for('login'))
         
@@ -127,7 +127,7 @@ def login():
         c.execute(sql, (femail,))
         
         result = c.fetchone()#gör solution med dict
-
+        print(result)
         if result:
             if result[0] == fpassw:             
                 session['admin'] = result[2]
@@ -176,9 +176,10 @@ def product(productID):
             if ID == userID:
                 my_rating = rating
 
-        c.execute("""select * from Comments where productID = %s;""", (productID,))
+        getCommentData_sql = "select comment, tStamp, email from comments, users where users.ID = comments.userID and productID = %s order by tStamp desc;"
+        c.execute(getCommentData_sql, (productID,))
         comments = []
-        keys = ('comment', 'userID', 'productID', 'ID')
+        keys = ('comment', 'tStamp', 'email')
         for comment in c.fetchall():
             comments.append(dict(zip(keys, comment)))
 
@@ -215,7 +216,7 @@ def product(productID):
                     return redirect(url_for('product', productID=productID))
 
                 elif 'comment' in request.form:
-                    comment = dict(request.form)['comment'][0]
+                    comment = request.form['comment']
                     sql = """insert into Comments (comment, userID, productID) values (%s, %s, %s);"""
                     val = (comment, session['ID'], productID)
                     c.execute(sql, val)
