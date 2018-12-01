@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS Basket(
     userID int,
     productID int,
     amount int,
+	CHECK (amount > 0)
     PRIMARY KEY (userID, productID),
     FOREIGN KEY (userID) REFERENCES Users(ID),
     FOREIGN KEY (productID) REFERENCES Products(ID)
