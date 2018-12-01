@@ -1,0 +1,43 @@
+{%extends "layout.html"%}
+{%block content%}
+	<h1>Shopping cart</h1>
+	<div class="row">
+		<div class="col">name</div>
+		<div class="col">amount</div>
+		<div class="col">price</div>
+		<div class="col">total</div>
+		<div class="col"></div>
+	</div>
+	{% for item in items%}
+		<div class="item">
+			<div class="row">
+				<!--<div class="col"><a href="/product/{{ item.ID }}"><h2>{{ item.name }}</h2></a></div>
+				-->
+				<div class="col"><a href="{{ url_for('product', productID=item.productID) }}"><h2>{{ item.productName }}</h2></a></div>
+				<div class="col">
+					<form method="post" action="">
+						<input type="number" name="amount" value={{ item.amount }} required>
+						<button type="submit" class="btn" name="update" value={{ item.productID }}>Update</button>
+					</form>
+				</div>
+				<div class="col"><p>{{ item.productPrice/100}} kr</p></div>
+				<div class="col"><p>{{ item.amount*item.productPrice/100 }} kr</p></div>
+				<div class="col"><p>
+					<form method="post" action="">
+						<button type="submit" class="btn" name="delete" value={{ item.productID }}>Delete</button>
+					</form>
+				</p></div>
+			</div>
+		</div>
+	{% endfor %}
+		<div class="row">
+				<div class="col"><h2>Sum:</h2></div>
+				<div class="col"></div>
+				<div class="col"></div>
+				<div class="col"><p>{{ grandTotal / 100 }} kr</p></div>
+				<div class="col"></div>
+				
+			</div>
+	
+	
+{%endblock content%}

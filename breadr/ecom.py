@@ -19,7 +19,7 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    #passwd="pass",
+    passwd="D0018Epassword",
     database="webshopDB"
 )
 
@@ -84,7 +84,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS Comments(
 def home():
     c.execute("""select * from Products;""")
     items = []
-    keys = ('pName', 'stock', 'price', 'descr', 'pic', 'ID')
+    keys = ('pName', 'stock', 'price', 'descr', 'pic', 'admin', 'ID')
     for fitem in c.fetchall():
         items.append(dict(zip(keys, fitem)))
     return render_template('home.html', items=items)
@@ -178,7 +178,7 @@ def product(productID):
 
         c.execute("""select * from Comments where productID = %s;""", (productID,))
         comments = []
-        keys = ('comment', 'userID', 'productID', 'ID')
+        keys = ('commentS', 'userID', 'productID', 'ID')
         for comment in c.fetchall():
             comments.append(dict(zip(keys, comment)))
 
@@ -216,7 +216,7 @@ def product(productID):
 
                 elif 'comment' in request.form:
                     comment = dict(request.form)['comment'][0]
-                    sql = """insert into Comments (comment, userID, productID) values (%s, %s, %s);"""
+                    sql = """insert into Comments (commentS, userID, productID) values (%s, %s, %s);"""
                     val = (comment, session['ID'], productID)
                     c.execute(sql, val)
                     db.commit()
@@ -260,6 +260,38 @@ def addProduct():
     else:
         flash('you do not have access to that page', 'danger')
         return redirect(url_for('home'))
+
+@app.route("/basket", methods=['GET','POST'])
+def basket():
+    val = session['ID']
+    grandTotal = 0
+    sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
+    c.execute(sql,(val,))
+    items = []
+    keys = ('userID', 'amount', 'productID', 'productPrice', 'productName')
+    for fitem in c.fetchall():
+        grandTotal = grandTotal + fitem[1]*fitem[3]
+        items.append(dict(zip(keys, fitem)))
+    
+
+    if 'ID' in session:  
+            if request.method == 'POST':
+                if 'update' in request.form:
+                    newAmount = request.form['amount']
+                    if int(newAmount) > 0:
+                        c.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s",(newAmount,session['ID'],request.form['update']))
+                        db.commit()
+                    elif int(newAmount) <= 0:
+                        c.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s",(session['ID'],request.form['update']))
+                        db.commit()    
+                elif 'delete' in request.form:
+                    c.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s",(session['ID'],request.form['delete']))
+                    db.commit()
+                return redirect(url_for('basket'))
+
+
+
+    return render_template('basket.html', items = items, grandTotal = grandTotal)
 
 
 
