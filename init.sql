@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS Transactions(
 );
 
 CREATE TABLE IF NOT EXISTS Comments(
-    comments varchar(256),
+    commentS varchar(256),
     userID int,
     productID int,
     ID int auto_increment,
