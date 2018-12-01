@@ -17,12 +17,37 @@
 			{%endif%}
 		</div>
 		<div class="col">
-			<h1>{{ product.pName }}</h1>
-			<p>{{ product.descr }}</p>			
-			<p class="martin">stock: {{product.stock}}</p>
-			<p>{{product.price/100}}kr</p>
-			<p>Rating: {{rating}}</p>
-			{% if session['ID']%}
+			{%if session['admin'] == 1%}
+				<form method="post" action="">
+					product name<br>
+					<input type="text" name="name" value="{{ product.pName }}" required><br>
+					description<br>
+					<textarea name="description" class="form-control">{{ product.descr }}</textarea><br>
+					stock<br>
+					<input type="number" name="stock" value="{{product.stock}}" required><br>
+					price<br>
+					<input type="number" name="price" value="{{ product.price }}" required><br>
+					pic adress<br>
+					<input type="text" name="pic" value="{{ product.pic }}"><br>
+					discontinued?:
+					<input type="checkbox" name="discontinued" 
+					{%if product.discontinued == 1%} checked{%endif%}
+					>
+					<button type="submit" class="btn" name="edit">save changes</button>
+				</form>
+			{%else%}
+				<h1>{{ product.pName }}</h1>
+				{% if product.descr %}
+					<p>{{ product.descr }}</p>	
+				{% endif %}
+				<p>stock: {{product.stock}}</p>
+				<p>{{product.price/100}}kr</p>
+				<p>Rating: {{rating}}</p>
+				{% if product.discontinued == 1%}
+					this product is discontinued
+				{% endif %}
+			{%endif%}
+			{% if session['ID'] and product.discontinued == 0%}
 			<form method="post" action="">
 				{% if my_rating == 1%}
 					<button type="submit" class="btn btn-primary" name="up">updoot</button>
@@ -48,12 +73,19 @@
 					<div class="col"><b>{{comment.email}}, {{comment.tStamp}}</b></div>
 				</div>
 				<div class="row">
-					<div class="col"><p>{{comment.comment}}</p></div>
+					<div class="col textarea">{{comment.comment}}</div>
 				</div>
+				{%if session['admin'] == 1%}
+					<form method="post" action="">
+						<input type="hidden" name="comment_ID" value="{{comment.id}}">
+						<button type="submit" class="btn btn-danger" name="delete">delete</button>
+					</form>
+				{%endif%}
 			</div>
 		</div>
 	</div>
 	{%endfor%}
+	{% if session['ID'] and product.discontinued == 0%}
 	<fieldset>
 		<legend>Comment on this product</legend>
 		<form method="post" action="">
@@ -62,6 +94,9 @@
 			<button type="submit" class="btn btn-success" name="post">post</button>
 		</form>
 	</fieldset>
+	{%elif not session['ID']%}
+	Log in to comment
+	{%endif%}
 
 	
 {%endblock content%}

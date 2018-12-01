@@ -5,3 +5,6 @@
 
 	color:orange;
 }
+.textarea{
+	word-break: break-all;
+}

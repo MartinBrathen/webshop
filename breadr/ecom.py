@@ -48,6 +48,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS Products(
     price int,
     descr varchar(255),
     pic varchar(255),
+    discontinued bit DEFAULT 0,
     ID int AUTO_INCREMENT,
     PRIMARY KEY (ID)
 );""")
@@ -84,9 +85,9 @@ c.execute("""CREATE TABLE IF NOT EXISTS Comments(
 @app.route("/")
 @app.route("/home")
 def home():
-    c.execute("""select * from Products;""")
+    c.execute("""select * from Products where discontinued = 0;""")
     items = []
-    keys = ('pName', 'stock', 'price', 'descr', 'pic', 'ID')
+    keys = ('pName', 'stock', 'price', 'descr', 'pic', 'discontinued', 'ID')
     for fitem in c.fetchall():
         items.append(dict(zip(keys, fitem)))
     return render_template('home.html', items=items)
@@ -157,7 +158,7 @@ def product(productID):
     product = c.fetchone()
     
     if product:
-        keys = ('pName', 'stock', 'price', 'descr', 'pic', 'ID')
+        keys = ('pName', 'stock', 'price', 'descr', 'pic', 'discontinued', 'ID')
 
         product=dict(zip(keys, product))
         tot_rating = 0
@@ -176,10 +177,10 @@ def product(productID):
             if ID == userID:
                 my_rating = rating
 
-        getCommentData_sql = "select comment, tStamp, email from comments, users where users.ID = comments.userID and productID = %s order by tStamp desc;"
+        getCommentData_sql = "select comment, tStamp, email, Comments.ID from Comments, users where users.ID = Comments.userID and productID = %s order by tStamp desc;"
         c.execute(getCommentData_sql, (productID,))
         comments = []
-        keys = ('comment', 'tStamp', 'email')
+        keys = ('comment', 'tStamp', 'email', 'id')
         for comment in c.fetchall():
             comments.append(dict(zip(keys, comment)))
 
@@ -223,7 +224,26 @@ def product(productID):
                     db.commit()
                     return redirect(url_for('product', productID=productID))
 
-
+                elif 'edit' in request.form:
+                    res = parseForm(request.form)
+                    print(res.get("discontinued"))
+                    sql="""update Products
+                    set pName = %s,
+                    stock = %s,
+                    price = %s,
+                    descr = %s,
+                    pic = %s,
+                    discontinued = %s
+                    where ID = %s;"""
+                    val = (res['name'], res['stock'], res['price'], res['description'], res['pic'], 0 if res.get('discontinued') ==  None else 1, productID)
+                    c.execute(sql,val)
+                    db.commit()
+                    return redirect(url_for('product', productID=productID))
+                
+                elif 'delete' in request.form:
+                    c.execute("""update Comments set comment = "DELETED" where ID = %s;""", (request.form.get('comment_ID'),))
+                    db.commit()
+                    return redirect(url_for('product', productID=productID))
 
         return render_template('product.html', product=product, rating = tot_rating, my_rating = my_rating, comments = comments)
     else:
@@ -240,20 +260,9 @@ def addProduct():
     #endast admin får vara på denna sida
     if 'ID' in session and session['admin'] == 1:
         if request.method == 'POST':
-
-            f = request.form
-            targets = ()
-            entrys = ()
-            val = ()
-            for info in f:
-                if f[info] != '':
-                    targets += (info,)
-                    entrys += ('%s',)
-                    if info == 'price' or info == 'stock':
-                        val += (int(f[info]),)
-                    else:
-                        val += (f[info],)
-            sql = "insert into Products {} values {};".format(targets, entrys).replace("'", "")
+            f = parseForm(request.form)
+            sql = """insert into Products(pName, stock, price, descr, pic) values (%s, %s, %s, %s, %s);"""
+            val = (f['pName'], f['stock'], f['price'], f['descr'], f['pic'])
             c.execute(sql, val)
             db.commit()
             
@@ -262,8 +271,14 @@ def addProduct():
         flash('you do not have access to that page', 'danger')
         return redirect(url_for('home'))
 
-
-
+#returns a werkzeug.MultiDict where values of 'NULL' 'None' '' are actually None.
+#use when you want sql to recieve a null(nil None NULL) value instead of a string
+def parseForm(form):
+    c = form.copy()
+    for key in c:
+        if c.get(key) == 'None' or c.get(key) == 'NULL' or c.get(key) == '':
+            c[key] = None
+    return c
 
 
 
