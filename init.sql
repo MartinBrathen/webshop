@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS Products(
     price int,
     descr varchar(255),
     pic varchar(255),
-    ID int,
+    discontinued bit DEFAULT 0,
+    ID int auto_increment,
     PRIMARY KEY (ID)
 );
 
@@ -18,8 +19,8 @@ CREATE TABLE IF NOT EXISTS Users(
     adress varchar(64),
     country varchar(32),
     phone varchar(32),
-    admin bit,
-    ID int,
+    admin bit DEFAULT 0,
+    ID int auto_increment,
     PRIMARY KEY (ID)
 );
 
@@ -27,14 +28,13 @@ CREATE TABLE IF NOT EXISTS Basket(
     userID int,
     productID int,
     amount int,
-    ID int,
-    PRIMARY KEY (ID),
+    PRIMARY KEY (userID, productID),
     FOREIGN KEY (userID) REFERENCES Users(ID),
     FOREIGN KEY (productID) REFERENCES Products(ID)
 );
 
 CREATE TABLE IF NOT EXISTS Orders(
-    ID int,
+    ID int auto_increment,
     orderStatus varchar(32),
     orderDate DATE,
     userID int,
@@ -46,8 +46,9 @@ CREATE TABLE IF NOT EXISTS Transactions(
     userID int,
     productID int,
     amount int,
-    ID int,
-	orderID int,
+    ID int auto_increment,
+    orderID int,
+    cost int,
     PRIMARY KEY (ID),
     FOREIGN KEY (orderID) REFERENCES Orders(ID),
     FOREIGN KEY (userID) REFERENCES Users(ID),
@@ -58,7 +59,8 @@ CREATE TABLE IF NOT EXISTS Comments(
     comments varchar(256),
     userID int,
     productID int,
-    ID int,
+    ID int auto_increment,
+	tStamp TIMESTAMP,
     PRIMARY KEY (ID),
     FOREIGN KEY (userID) REFERENCES Users(ID),
     FOREIGN KEY (productID) REFERENCES Products(ID)
@@ -75,16 +77,15 @@ CREATE TABLE IF NOT EXISTS Ratings(
 
 CREATE TABLE IF NOT EXISTS Keywords(
     keyword varchar(32),
-    ID int,
+    ID int auto_increment,
     PRIMARY KEY(ID)
 );
 
 
 CREATE TABLE IF NOT EXISTS KeywordRelation(
-    ID int,
     productID int,
     keywordID int,
-    PRIMARY KEY(ID),
+    PRIMARY KEY(keywordID, productID),
     FOREIGN KEY (keywordID) REFERENCES Keywords(ID),
     FOREIGN KEY (productID) REFERENCES Products(ID)
 );
