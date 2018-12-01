@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS Comments(
     userID int,
     productID int,
     ID int auto_increment,
-	tStamp TIMESTAMP,
+	tStamp TIMESTAMP DEFAULT current_timestamp,
     PRIMARY KEY (ID),
     FOREIGN KEY (userID) REFERENCES Users(ID),
     FOREIGN KEY (productID) REFERENCES Products(ID)
