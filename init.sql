@@ -44,7 +44,6 @@ CREATE TABLE IF NOT EXISTS Orders(
 );
 
 CREATE TABLE IF NOT EXISTS Transactions(
-    userID int,
     productID int,
     amount int,
     ID int auto_increment,
