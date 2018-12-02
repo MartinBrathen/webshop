@@ -22,11 +22,11 @@
 				</div>
 				<div class="col"><p>{{ item.productPrice/100}} kr</p></div>
 				<div class="col"><p>{{ item.amount*item.productPrice/100 }} kr</p></div>
-				<div class="col"><p>
+				<div class="col">
 					<form method="post" action="">
 						<button type="submit" class="btn" name="delete" value={{ item.productID }}>Delete</button>
 					</form>
-				</p></div>
+				</div>
 			</div>
 		</div>
 	{% endfor %}
@@ -35,7 +35,13 @@
 				<div class="col"></div>
 				<div class="col"></div>
 				<div class="col"><p>{{ grandTotal / 100 }} kr</p></div>
-				<div class="col"></div>
+				<div class="col">
+				{% if grandTotal > 0 %}
+					<form method="post" action="">
+						<button type="submit" class="btn" name="checkout" value="""">Proceed to checkout</button>
+					</form>
+				{% endif %}
+				</div>
 				
 			</div>
 	

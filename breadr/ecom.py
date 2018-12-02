@@ -19,8 +19,8 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    #passwd="D0018Epassword",
-    passwd="D0018Epass",
+    passwd="D0018Epassword",
+    #passwd="D0018Epass",
     database="webshopDB"
 )
 
@@ -177,10 +177,10 @@ def product(productID):
             if ID == userID:
                 my_rating = rating
 
-        getCommentData_sql = "select comment, tStamp, email, Comments.ID from Comments, users where users.ID = Comments.userID and productID = %s order by tStamp desc;"
+        getCommentData_sql = "select commentS, tStamp, email, Comments.ID from Comments, Users where Users.ID = Comments.userID and productID = %s order by tStamp desc;"
         c.execute(getCommentData_sql, (productID,))
         comments = []
-        keys = ('comment', 'tStamp', 'email', 'id')
+        keys = ('commentS', 'tStamp', 'email', 'id')
         for comment in c.fetchall():
             comments.append(dict(zip(keys, comment)))
 
@@ -218,7 +218,7 @@ def product(productID):
 
                 elif 'comment' in request.form:
                     comment = request.form['comment']
-                    sql = """insert into Comments (comment, userID, productID) values (%s, %s, %s);"""
+                    sql = """insert into Comments (commentS, userID, productID) values (%s, %s, %s);"""
                     val = (comment, session['ID'], productID)
                     c.execute(sql, val)
                     db.commit()
@@ -241,7 +241,7 @@ def product(productID):
                     return redirect(url_for('product', productID=productID))
                 
                 elif 'delete' in request.form:
-                    c.execute("""update Comments set comment = "DELETED" where ID = %s;""", (request.form.get('comment_ID'),))
+                    c.execute("""update Comments set commentS = "DELETED" where ID = %s;""", (request.form.get('comment_ID'),))
                     db.commit()
                     return redirect(url_for('product', productID=productID))
 
@@ -273,35 +273,94 @@ def addProduct():
 
 @app.route("/basket", methods=['GET','POST'])
 def basket():
-    val = session['ID']
     grandTotal = 0
-    sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
-    c.execute(sql,(val,))
     items = []
-    keys = ('userID', 'amount', 'productID', 'productPrice', 'productName')
-    for fitem in c.fetchall():
-        grandTotal = grandTotal + fitem[1]*fitem[3]
-        items.append(dict(zip(keys, fitem)))
+    if 'ID' in session:
+        val = session['ID']
+        
+        sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
+        c.execute(sql,(val,))
+        
+        keys = ('userID', 'amount', 'productID', 'productPrice', 'productName')
+        for fitem in c.fetchall():
+            grandTotal = grandTotal + fitem[1]*fitem[3]
+            items.append(dict(zip(keys, fitem)))
     
 
-    if 'ID' in session:  
-            if request.method == 'POST':
-                if 'update' in request.form:
-                    newAmount = request.form['amount']
-                    if int(newAmount) > 0:
-                        c.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s",(newAmount,session['ID'],request.form['update']))
-                        db.commit()
-                    elif int(newAmount) <= 0:
-                        c.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s",(session['ID'],request.form['update']))
-                        db.commit()    
-                elif 'delete' in request.form:
-                    c.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s",(session['ID'],request.form['delete']))
+      
+        if request.method == 'POST':
+            if 'update' in request.form:
+                newAmount = request.form['amount']
+                if int(newAmount) > 0:
+                    c.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s;",(newAmount,session['ID'],request.form['update']))
                     db.commit()
+                elif int(newAmount) <= 0:
+                    c.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['update']))
+                    db.commit()   
                 return redirect(url_for('basket'))
-
-
-
+            elif 'delete' in request.form:
+                c.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['delete']))
+                db.commit()
+                return redirect(url_for('basket'))
+            elif 'checkout' in request.form:
+                return redirect(url_for('checkout'))
+    
     return render_template('basket.html', items = items, grandTotal = grandTotal)
+
+@app.route("/checkout", methods=['GET','POST',''])
+def checkout():
+
+    grandTotal = 0
+    items = []
+    sufficientInfo = False
+    if 'ID' in session:
+        val = session['ID']
+        
+        sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
+        c.execute(sql,(val,))
+        
+        keys = ('userID', 'amount', 'productID', 'productPrice', 'productName')
+        for fitem in c.fetchall():
+            grandTotal = grandTotal + fitem[1]*fitem[3]
+            items.append(dict(zip(keys, fitem)))
+
+        sql = """SELECT Users.fName, Users.lName, Users.adress, Users.country, Users.phone, Users.email FROM Users WHERE ID = %s"""
+        c.execute(sql,(val,))
+        keys = ('userFName', 'userLName', 'userAdress', 'userCountry', 'userPhone', 'userEmail')
+        user = (dict(zip(keys,c.fetchone())))
+        if (user.get('userFName') and user.get('userLName') and user.get('userAdress') and user.get('userCountry') and user.get('userEmail')):
+            sufficientInfo = True
+
+        if request.method == 'POST':
+            print(request.form)
+            if 'order' in request.form:
+                c.execute("INSERT INTO Orders (id, orderDate,userID) VALUES (NULL,CURRENT_DATE,%s);",(session['ID'],))
+                db.commit()
+                c.execute("SELECT LAST_INSERT_ID()")
+                orderID = c.fetchone()
+                print('hej')
+                for item in items:
+                    cost = int(item.get('productPrice'))*int(item.get('amount'))
+                    print(cost)
+                    print(item.get('productID'))
+                    print(item.get('amount'))
+                    print(orderID[0])
+                    c.execute("INSERT INTO Transactions (productID,amount,orderID,cost) VALUES (%s,%s,%s,%s)",(item.get('productID'),item.get('amount'),orderID[0],cost))
+                    db.commit()
+                c.execute("DELETE FROM Basket WHERE Basket.userID=%s;",(session['ID'],))
+                db.commit()
+                flash('Order has been placed', 'danger')
+                return redirect(url_for('home'))
+            elif 'basket' in request.form:
+                return redirect(url_for('basket'))
+            elif 'account' in request.form:
+                #return redirect(url_for('account'))
+                print("not done")
+
+
+
+
+    return render_template('checkout.html', items = items, grandTotal = grandTotal, user = user, sufficientInfo = sufficientInfo)
 
 
 

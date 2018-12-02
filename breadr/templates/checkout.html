@@ -1,0 +1,42 @@
+{%extends "layout.html"%}
+{%block content%}
+	<h1>Checkout</h1>
+	<div class="col">
+		<div class="row">
+			<form method="post" action="">
+				{% if sufficientInfo and grandTotal > 0 %}
+					
+					<h3>Confirm order</h3>
+					First Name: {{user.userFName}}<br>
+					Last Name: {{user.userLName}}<br>
+					Address: {{user.userAdress}}<br>
+					Country: {{user.userCountry}}<br>
+					Phone Number: {{user.userPhone}}<br>
+					Email: {{user.userEmail}}<br>
+					Subtotal: {{grandTotal/100}} kr<br>
+					<button type="submit" class="btn" name="order" value="">Place order</button>
+					
+					
+
+					
+				{% elif grandTotal <= 0 %}
+
+					<h3>You do not have any items in your basket</h3>
+
+				{% else %}
+					
+					<h3>You need to provide additional information</h3>
+					<button type="submit" class="btn" name="account" value="">Go to account page</button>
+					
+					
+				{% endif %}
+					<button type="submit" class="btn" name="basket" value="">Go back to basket</button>
+			</form>
+			
+		</div>
+		
+	</div>
+	
+	
+	
+{%endblock content%}
