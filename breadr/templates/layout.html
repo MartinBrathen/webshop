@@ -20,12 +20,18 @@
 <body>
 	<!-- NAVBAR -->
 	<nav class="navbar navbar-expand-sm">
+			<!-- LEFT SIDE -->
 			<a class="navbar-brand" href="{{ url_for('home') }}">köpa bröd</a>
+			<ul class = navbar-nav>
+				<li class="nav-item"><a class="nav-link" href="{{url_for('home')}}">Browse</a></li>
+			</ul>
+			
+			<!-- RIGHT SIDE -->
 			<ul class="navbar-nav ml-auto">
+			<!--  LOGGED IN  -->
 			{%if session['ID']%}
 				<li class="nav-item"><a class="nav-link" href="#">Account({{ session['ID'] }})</a></li>
-				<li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">logout</a></li>
-				
+				<li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">logout</a></li>			
 			{%else%}
 				<li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">register</a></li>
 				<li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">login</a></li>

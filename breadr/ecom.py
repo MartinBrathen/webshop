@@ -2,6 +2,8 @@
 # coding: utf-8
 from flask import Flask, render_template, url_for, request, redirect, flash, session
 import mysql.connector
+import requests
+import random
 
 app = Flask(__name__)
 app.secret_key = "0ul9oiewdsrukoiwsze" #generera säker nyckel
@@ -19,8 +21,8 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    passwd="D0018Epassword",
-    #passwd="D0018Epass",
+    #passwd="D0018Epassword",
+    passwd="D0018Epass",
     database="webshopDB"
 )
 
@@ -57,8 +59,29 @@ c.execute("""CREATE TABLE IF NOT EXISTS Basket(
     userID int,
     productID int,
     amount int,
+    CHECK (amount > 0),
     PRIMARY KEY (userID,productID),
     FOREIGN KEY (userID) REFERENCES Users(ID),
+    FOREIGN KEY (productID) REFERENCES Products(ID)
+);""")
+
+c.execute("""CREATE TABLE IF NOT EXISTS Orders(
+    id int auto_increment,
+    orderStatus varchar(32),
+    orderDate DATE,
+    userID int,
+    PRIMARY KEY (id),
+    FOREIGN KEY (userID) REFERENCES Users(ID)
+);""")
+
+c.execute("""CREATE TABLE IF NOT EXISTS Transactions(
+    productID int,
+    amount int,
+    id int auto_increment,
+    orderID int,
+    cost int,
+    PRIMARY KEY (id),
+    FOREIGN KEY (orderID) REFERENCES Orders(id),
     FOREIGN KEY (productID) REFERENCES Products(ID)
 );""")
 
@@ -72,10 +95,10 @@ c.execute("""CREATE TABLE IF NOT EXISTS Ratings(
 );""")
 
 c.execute("""CREATE TABLE IF NOT EXISTS Comments(
-    comment varchar(256),
+    commentS varchar(256),
     userID int,
     productID int,
-    ID int AUTO_INCREMENT,
+    id int AUTO_INCREMENT,
     tStamp TIMESTAMP DEFAULT current_timestamp,
     PRIMARY KEY (ID),
     FOREIGN KEY (userID) REFERENCES Users(ID),
@@ -83,14 +106,32 @@ c.execute("""CREATE TABLE IF NOT EXISTS Comments(
 );""")
 
 @app.route("/")
-@app.route("/home")
+@app.route("/home", methods=['GET','POST'])
 def home():
-    c.execute("""select * from Products where discontinued = 0;""")
+    meme = requests.get('https://www.reddit.com/r/dankmemes/search.json?q=a&sort=new&restrict_sr=1&limit=20', headers = {'User-agent': 'your bot 0.1'}).json()
+    meme=meme['data']['children'][random.randrange(20)]['data']['url']
+    product_name = ''
+    discontinued = 0
+    in_stock = 0
+    print("request.method = {}".format(request.method))
+    if request.method == 'GET':
+        print(request.args)
+        if request.args.get('discontinued') == 'on':
+            discontinued =  1
+
+        if request.args.get('in_stock') == 'on':
+            in_stock =  1
+        
+        if request.args.get('product_name') != None:
+            product_name = request.args.get('product_name')
+
+    print(product_name, discontinued, in_stock)
+    c.execute("""select * from Products where (discontinued = {} or discontinued = 0) and pName like '%{}%' and stock >= {};""".format(discontinued, product_name, in_stock))
     items = []
     keys = ('pName', 'stock', 'price', 'descr', 'pic', 'discontinued', 'ID')
     for fitem in c.fetchall():
         items.append(dict(zip(keys, fitem)))
-    return render_template('home.html', items=items)
+    return render_template('home.html', items=items, query = request.args, meme = meme)
 
 
 @app.route("/register", methods=['GET','POST'])
@@ -133,15 +174,15 @@ def login():
             if result[0] == fpassw:             
                 session['admin'] = result[2]
                 flash('Successfully logged in{}'.format(' as admin' if result[2] == 1 else ''), 'success')
-                session['ID'] = result[1]
-
-                
+                session['ID'] = result[1]             
                 return redirect(url_for('home'))
                                 
             else:
+                print('wrong password')
                 return render_template('login.html', passwmsg='wrong password', email = femail)
 
         else:
+            print('wrong email')
             return render_template('login.html', emailmsg='wrong email')
         
         

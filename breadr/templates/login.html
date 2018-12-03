@@ -1,21 +1,23 @@
 {%extends "layout.html"%}
 {%block content%}
-	<h1>login to start your breaded journey</h1>
-	<form method="POST" action="">
-		E-mail<br>
-		{% if email %}<input type="text" name="email" value="{{ email }}" pattern="[^\s]+@[^\s]+\.[^\s]+" required><br>
-		{% else     %}<input type="text" name="email" placeholder="johndoe@mail.com" pattern="[^\s]+@[^\s]+\.[^\s]+" required><br>
-		{% endif %}
-		
-		{%if emailmsg%}
-			<div class="alert alert-danger">{{emailmsg}}</div>
-		{%endif%}
-		password<br>
-		<input type="password" name="pass"><br>	
-		{%if passwmsg%}
-			<div class="alert alert-danger">{{passwmsg}}</div>
-		{%endif%}
-		<input type="submit" value="Login!">
-	</form>
+	<fieldset class="card p-3">
+		<legend class="w-auto">step 1</legend>
+		<form method="POST" action="">
+			<div class="form-group">
+				<label>E-mail</label>
+				<input class="form-control {%if emailmsg%}is-invalid{%endif%}" type="text" name="email" {% if email %} value="{{ email }}" {% else %} placeholder="johndoe@mail.com" {% endif %}pattern="[^\s]+@[^\s]+\.[^\s]+" required>	
+				{%if emailmsg%}<div class="invalid-feedback">{{emailmsg}}</div>{%endif%}
+			</div>
+			
+			
+			<div class="form-group">
+				<label>Password</label>
+				<input type="password" name="pass" class="form-control {%if passwmsg%}is-invalid{%endif%}">
+				{%if passwmsg%}<div class="invalid-feedback">{{passwmsg}}</div>{%endif%}
+			</div>
+				
+			<button type="submit" class="btn btn-primary">Login!</button>
+		</form>
+	</fieldset>
 	Don't have an account? <a href="{{ url_for('register') }}">Register here</a>
 {%endblock content%}

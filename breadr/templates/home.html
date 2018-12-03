@@ -1,38 +1,65 @@
 {%extends "layout.html"%}
 {%block content%}
-	<h1>Browser</h1>
 	<div class="row">
-		<div class="col">name</div>
-		<div class="col">stock</div>
-		<div class="col">price</div>
-		<div class="col">ID</div>
-	</div>
-	{% for item in items%}
-		<div class="item">
-			<div class="row">
-				<!--<div class="col"><a href="/product/{{ item.ID }}"><h2>{{ item.name }}</h2></a></div>
-				-->
-				<div class="col"><a href="{{ url_for('product', productID=item.ID) }}"><h2>{{ item.pName }}</h2></a></div>
-				<div class="col">
-					{%if item.stock > 1%}
-						<p>{{ item.stock }} items left in stock</p>
-					{%else%}
-						<p>only {{ item.stock }} item left in stock</p>
-					{%endif%}
-				</div>
-				<div class="col">{{item.price/100}}kr</div>
-				<div class="col">{{item.ID}}</div>
-			</div>
-			<div class="row">
-				<div class="col">
-					<p>{{ item.desc }}</p>
-				</div>
-			</div>
+		<div class="col-8">
+			<h1>Browser</h1>
+			{%if items%}
+				<div class="row">
+					<div class="col">name</div>
+					<div class="col">stock</div>
+					<div class="col">price</div>
+					<!--<div class="col">ID</div>-->
+				</div>	
+				{% for item in items%}
+					<div class="item">
+						<div class="row">
+							<!--<div class="col"><a href="/product/{{ item.ID }}"><h2>{{ item.name }}</h2></a></div>
+							-->
+							<div class="col"><a href="{{ url_for('product', productID=item.ID) }}"><h4>{{ item.pName }}</h4></a></div>
+							<div class="col">								
+								<p>{{ item.stock }} pce</p>
+							</div>
+							<div class="col">{{item.price/100}}kr/ea</div>
+							<!--<div class="col">{{item.ID}}</div>-->
+						</div>
+						<div class="row">
+							<div class="col">
+								<p>{{ item.desc }}</p>
+							</div>
+						</div>
+					</div>
+				{% endfor %}
+			{% else %}
+				<p class="danger">Sorry, no products found</p>
+			{% endif %}
+			{% if session['admin'] == 1%}
+				<a href="{{ url_for('addProduct') }}">add product</a>
+			{% endif %}
 		</div>
-	{% endfor %}
-	
-	{% if session['admin'] == 1%}
-		<a href="{{ url_for('addProduct') }}">add product</a>
-	{% endif %}
-	
+		<div class="col-4">
+			<fieldset class="card p-3">
+			<legend class="w-auto">Search</legend>
+			<form method="GET" action="">
+				<div class="form-group">
+					<label>Name</label>
+					<input class="form-control" type="text" name="product_name" value="{{query.product_name}}">
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" name="in_stock" {%if query.in_stock%}checked{%endif%}>
+					<label class="form-check-label">
+						Item in stock?
+					</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" name="discontinued" {%if query.discontinued%}checked{%endif%}>
+					<label class="form-check-label">
+						Include discontinued products?
+					</label>
+				</div>
+				<button type="submit" class="btn btn-primary">Search</button>
+			</form>
+			</fieldset>
+		</div>
+	</div>
+	<img src="{{meme}}" class="img-fluid">
 {%endblock content%}
