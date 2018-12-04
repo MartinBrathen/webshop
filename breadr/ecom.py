@@ -108,8 +108,9 @@ c.execute("""CREATE TABLE IF NOT EXISTS Comments(
 @app.route("/")
 @app.route("/home", methods=['GET','POST'])
 def home():
-    meme = requests.get('https://www.reddit.com/r/dankmemes/search.json?q=a&sort=new&restrict_sr=1&limit=20', headers = {'User-agent': 'your bot 0.1'}).json()
-    meme=meme['data']['children'][random.randrange(20)]['data']['url']
+    limit = 100
+    meme = requests.get('https://www.reddit.com/r/dankmemes/search.json?q=a&sort=hot&restrict_sr=1&limit={}'.format(limit), headers = {'User-agent': 'your bot 0.1'}).json()
+    meme=meme['data']['children'][random.randrange(limit)]['data']
     product_name = ''
     discontinued = 0
     in_stock = 0
@@ -167,22 +168,22 @@ def login():
         fpassw = request.form['pass']
         sql = "select pWord, ID, admin from Users where email = %s;"
         c.execute(sql, (femail,))
-        
-        result = c.fetchone()#gör solution med dict
-        print(result)
+        result = c.fetchone()
+        #email finns
         if result:
-            if result[0] == fpassw:             
-                session['admin'] = result[2]
-                flash('Successfully logged in{}'.format(' as admin' if result[2] == 1 else ''), 'success')
-                session['ID'] = result[1]             
-                return redirect(url_for('home'))
-                                
+            result = dict(zip(('pass', 'ID', 'admin'), result))
+            #password är rätt
+            if result['pass'] == fpassw:        
+                session['admin'] = result['admin']
+                flash('Successfully logged in{}'.format(' with admin privileges' if result['admin'] == 1 else ''), 'success')
+                session['ID'] = result['ID'] 
+                update_basket()            
+                return redirect(url_for('home'))  
+            #fel password                           
             else:
-                print('wrong password')
                 return render_template('login.html', passwmsg='wrong password', email = femail)
-
+        #fel email
         else:
-            print('wrong email')
             return render_template('login.html', emailmsg='wrong email')
         
         
@@ -250,11 +251,14 @@ def product(productID):
                     #place in cart code
                     f = request.form
                     quantity = int(dict(f)['quantity'][0])
-                    sql = """insert into Basket (userID, productID, amount) values (%s, %s, %s) 
-                    on duplicate key update amount = amount + %s;"""
-                    val = (session['ID'], productID, quantity, quantity)
-                    c.execute(sql, val)
-                    db.commit()
+                    if quantity != 0:
+                        sql = """insert into Basket (userID, productID, amount) values (%s, %s, %s) 
+                        on duplicate key update amount = amount + %s;"""
+                        val = (session['ID'], productID, quantity, quantity)
+                        c.execute(sql, val)
+                        db.commit()
+                        update_basket()
+                        flash("{} {} items to the basket".format('added' if quantity > 0 else 'removed', abs(quantity)), 'success')
                     return redirect(url_for('product', productID=productID))
 
                 elif 'comment' in request.form:
@@ -279,6 +283,7 @@ def product(productID):
                     val = (res['name'], res['stock'], res['price'], res['description'], res['pic'], 0 if res.get('discontinued') ==  None else 1, productID)
                     c.execute(sql,val)
                     db.commit()
+                    flash("Changes committed!", 'success')
                     return redirect(url_for('product', productID=productID))
                 
                 elif 'delete' in request.form:
@@ -294,6 +299,7 @@ def product(productID):
 def logout():
     session.pop('ID', None)
     session.pop('admin', None)
+    flash("You are now logged out", 'success')
     return redirect(url_for('home'))
 
 @app.route("/addProduct", methods=['GET','POST'])
@@ -306,6 +312,8 @@ def addProduct():
             val = (f['pName'], f['stock'], f['price'], f['descr'], f['pic'])
             c.execute(sql, val)
             db.commit()
+            flash("New product '{}' added, you can edit data on product page".format(f['pName']), 'success')
+            return redirect('addProduct')
             
         return render_template('addProduct.html')
     else:
@@ -333,15 +341,17 @@ def basket():
             if 'update' in request.form:
                 newAmount = request.form['amount']
                 if int(newAmount) > 0:
-                    c.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s;",(newAmount,session['ID'],request.form['update']))
+                    c.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s;",(newAmount, session['ID'], request.form['update']))
                     db.commit()
                 elif int(newAmount) <= 0:
                     c.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['update']))
-                    db.commit()   
+                    db.commit()  
+                update_basket() 
                 return redirect(url_for('basket'))
             elif 'delete' in request.form:
                 c.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['delete']))
                 db.commit()
+                update_basket() 
                 return redirect(url_for('basket'))
             elif 'checkout' in request.form:
                 return redirect(url_for('checkout'))
@@ -403,17 +413,59 @@ def checkout():
 
     return render_template('checkout.html', items = items, grandTotal = grandTotal, user = user, sufficientInfo = sufficientInfo)
 
+@app.route("/add_admin", methods=['GET','POST'])
+def add_admin():
+    #endast admin får vara på denna sida
+    if 'ID' in session and session['admin'] == 1:
 
+        if request.method == 'POST':
+            f = parseForm(request.form)
+            sql = """select email, admin, ID from Users where email = %s;"""
+            val = (f.get('email'),)
+            c.execute(sql, val)
+            res = c.fetchone()
+            if res:
+                res = dict(zip(('email', 'admin', 'ID'), res))
+                if res.get('ID') == session['ID']:
+                    return redirect(url_for('add_admin', email_msg="you cant remove your own privilege"))
+                admin = 1 if (res.get('admin') == 0 or res.get('admin') == None) else 0
+                sql = """update Users set admin = %s where email = %s;"""
+                c.execute(sql, (admin, res.get('email')))
+                db.commit()
+                flash("Admin privilege {} user with email: {}".format("given to" if admin == 1 else "removed from", f.get('email')), 'success')
+                return redirect('add_admin')
+            else:
+                print("det fanns inte")
+                return redirect(url_for('add_admin', email_msg="no such email found"))
+           
+            return redirect('add_admin')
+        msg = request.args
+        print("msg: {}".format(msg))
+        return render_template('add_admin.html', msg = msg)
+    else:
+        flash('you do not have access to that page', 'danger')
+        return redirect(url_for('home'))
 
 
 #returns a werkzeug.MultiDict where values of 'NULL' 'None' '' are actually None.
 #use when you want sql to recieve a null(nil None NULL) value instead of a string
+#maybe add so strings of numbers become ints; SQL autocasts strings to int
 def parseForm(form):
     c = form.copy()
     for key in c:
         if c.get(key) == 'None' or c.get(key) == 'NULL' or c.get(key) == '':
             c[key] = None
     return c
+
+def update_basket(userID = None):
+    if userID == None:
+        userID = session['ID']
+    sql = """select amount from Basket where userID = %s"""
+    c.execute(sql, (userID,))
+    total_in_basket = 0
+    for amount in c.fetchall():
+        total_in_basket += amount[0]
+    session['basket'] = total_in_basket
 
 
 

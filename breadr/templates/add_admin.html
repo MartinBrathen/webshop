@@ -1,0 +1,15 @@
+{%extends "layout.html"%}
+{%block content%}
+	<fieldset class="card p-3">
+		<legend class="w-auto">Add/remove admin</legend>
+		<form method="POST" action="">
+			<div class="form-group">
+				Enter a email to give that user admin privilege, if already admin this will remove admin priv
+				<label>E-mail</label>
+				<input class="form-control {%if msg.email_msg%}is-invalid{%endif%}" type="text" name="email" placeholder="johndoe@mail.com">	
+				{%if msg.email_msg%}<div class="invalid-feedback">{{msg.email_msg}}</div>{%endif%}
+			</div>			
+			<button type="submit" class="btn btn-primary">toggle!</button>
+		</form>
+	</fieldset>
+{%endblock content%}

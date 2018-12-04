@@ -65,6 +65,7 @@
 			{%endif%}
 		</div>
 	</div>
+	<h3>Comments</h3>
 	{%for comment in comments%}
 	<div class="item">
 		<div class="row">
@@ -73,7 +74,7 @@
 					<div class="col"><b>{{comment.email}}, {{comment.tStamp}}</b></div>
 				</div>
 				<div class="row">
-					<div class="col textarea">{{comment.comment}}</div>
+					<div class="col textarea">{{comment.commentS}}</div>
 				</div>
 				{%if session['admin'] == 1%}
 					<form method="post" action="">
@@ -95,7 +96,7 @@
 		</form>
 	</fieldset>
 	{%elif not session['ID']%}
-	Log in to comment
+	Log in to post a comment, <a href="url_for('login')">login here</a>
 	{%endif%}
 
 	

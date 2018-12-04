@@ -30,8 +30,16 @@
 			<ul class="navbar-nav ml-auto">
 			<!--  LOGGED IN  -->
 			{%if session['ID']%}
+				<!-- LOGGED IN AND ADMIN -->				
+				{%if session['admin'] == 1%}
+					<li class="nav-item"><a class="nav-link" href="{{url_for('add_admin')}}">Add/remove admin</a></li>
+				{%endif%}
+				<li class="nav-item"><a class="nav-link" href="{{url_for('basket')}}">Basket({{ session['basket'] }})</a></li>
 				<li class="nav-item"><a class="nav-link" href="#">Account({{ session['ID'] }})</a></li>
 				<li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">logout</a></li>			
+				
+
+			<!-- NOT LOGGED IN -->
 			{%else%}
 				<li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">register</a></li>
 				<li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">login</a></li>
