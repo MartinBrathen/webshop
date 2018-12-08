@@ -21,8 +21,8 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    #passwd="D0018Epassword",
-    passwd="D0018Epass",
+    passwd="D0018Epassword",
+    #passwd="D0018Epass",
     database="webshopDB"
 )
 
@@ -339,8 +339,10 @@ def basket():
       
         if request.method == 'POST':
             if 'update' in request.form:
-                newAmount = request.form['amount']
-                if int(newAmount) > 0:
+                newAmount = request.form['update']
+                c.execute("""SELECT Products.stock FROM Products WHERE Products.ID=%s""", (request.form['update'],))
+                inStock=c.fetchone()[0]
+                if int(inStock) > int(newAmount) > 0:
                     c.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s;",(newAmount, session['ID'], request.form['update']))
                     db.commit()
                 elif int(newAmount) <= 0:
@@ -362,45 +364,67 @@ def basket():
 def checkout():
 
     grandTotal = 0
+    totalAmount = 0
     items = []
     sufficientInfo = False
     if 'ID' in session:
-        val = session['ID']
-        
-        sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
-        c.execute(sql,(val,))
-        
-        keys = ('userID', 'amount', 'productID', 'productPrice', 'productName')
-        for fitem in c.fetchall():
-            grandTotal = grandTotal + fitem[1]*fitem[3]
-            items.append(dict(zip(keys, fitem)))
+        idTuple = (session['ID'],)
+
+        sql = """SELECT sum(Basket.amount*Products.price),sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
+        c.execute(sql,idTuple)
+        tmp = c.fetchone()
+        if not tmp[1]:
+            flash('You have no items in cart', 'danger')
+            return redirect(url_for('basket'))
+
+        grandTotal = tmp[0]
+        totalAmount = tmp[1]
+
+        sql = """SELECT sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s AND Basket.amount > Products.stock;"""
+        c.execute(sql,idTuple)
+        tmp = c.fetchone()[0]
+
+        if tmp:
+            flash('Quantity of one of more items exceed our current stock for said item', 'danger')
+            return redirect(url_for('basket'))
 
         sql = """SELECT Users.fName, Users.lName, Users.adress, Users.country, Users.phone, Users.email FROM Users WHERE ID = %s"""
-        c.execute(sql,(val,))
+        c.execute(sql,idTuple)
         keys = ('userFName', 'userLName', 'userAdress', 'userCountry', 'userPhone', 'userEmail')
         user = (dict(zip(keys,c.fetchone())))
         if (user.get('userFName') and user.get('userLName') and user.get('userAdress') and user.get('userCountry') and user.get('userEmail')):
             sufficientInfo = True
 
         if request.method == 'POST':
-            print(request.form)
-            if 'order' in request.form:
+            if 'order' in request.form and totalAmount > 0:
+
+
+                sql = """SELECT sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s AND Basket.amount > Products.stock;"""
+                c.execute(sql,idTuple)
+                tmp = c.fetchone()[0]
+
+                if tmp:
+                    flash('Quantity of one of more items exceed our current stock for said item', 'danger')
+                    return redirect(url_for('basket'))
+
                 c.execute("INSERT INTO Orders (id, orderDate,userID) VALUES (NULL,CURRENT_DATE,%s);",(session['ID'],))
-                db.commit()
                 c.execute("SELECT LAST_INSERT_ID()")
-                orderID = c.fetchone()
-                print('hej')
+                orderID = c.fetchone()[0]
+
+                sql = """SELECT Basket.amount, Products.ID, Products.price, Products.stock FROM Basket INNER JOIN Products 
+                ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
+                c.execute(sql,idTuple)
+                items = c.fetchall()
                 for item in items:
-                    cost = int(item.get('productPrice'))*int(item.get('amount'))
-                    print(cost)
-                    print(item.get('productID'))
-                    print(item.get('amount'))
-                    print(orderID[0])
-                    c.execute("INSERT INTO Transactions (productID,amount,orderID,cost) VALUES (%s,%s,%s,%s)",(item.get('productID'),item.get('amount'),orderID[0],cost))
-                    db.commit()
+                    cost = int(item[2])*int(item[0])
+                    c.execute("""INSERT INTO Transactions (productID,amount,orderID,cost) VALUES (%s,%s,%s,%s)""",(item[1],item[0],orderID,cost))
+                    newStock = int(item[3]) - int(item[0])
+                    c.execute("""UPDATE Products SET Products.stock = %s WHERE Products.ID = %s""",(newStock,item[1]))
+
+
                 c.execute("DELETE FROM Basket WHERE Basket.userID=%s;",(session['ID'],))
                 db.commit()
-                flash('Order has been placed', 'danger')
+                flash('Order has been placed', 'success')
                 return redirect(url_for('home'))
             elif 'basket' in request.form:
                 return redirect(url_for('basket'))
@@ -411,7 +435,7 @@ def checkout():
 
 
 
-    return render_template('checkout.html', items = items, grandTotal = grandTotal, user = user, sufficientInfo = sufficientInfo)
+    return render_template('checkout.html', grandTotal = grandTotal, user = user, sufficientInfo = sufficientInfo)
 
 @app.route("/add_admin", methods=['GET','POST'])
 def add_admin():
