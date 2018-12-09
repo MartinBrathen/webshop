@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS Basket(
 
 CREATE TABLE IF NOT EXISTS Orders(
     id int auto_increment,
-    orderStatus varchar(32),
+    orderStatus varchar(32) DEFAULT 'Pending',
     orderDate DATE,
     userID int,
     PRIMARY KEY (id),
