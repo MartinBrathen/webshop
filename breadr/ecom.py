@@ -327,7 +327,8 @@ def basket():
     if 'ID' in session:
         val = session['ID']
         
-        sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
+        sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON
+        Basket.productID=Products.ID WHERE Basket.userID = %s AND Products.discontinued = 0;"""
         c.execute(sql,(val,))
         
         keys = ('userID', 'amount', 'productID', 'productPrice', 'productName')
@@ -370,7 +371,7 @@ def checkout():
     if 'ID' in session:
         idTuple = (session['ID'],)
 
-        sql = """SELECT sum(Basket.amount*Products.price),sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
+        sql = """SELECT sum(Basket.amount*Products.price),sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s AND Products.discontinued = 0;"""
         c.execute(sql,idTuple)
         tmp = c.fetchone()
         if not tmp[1]:
@@ -385,7 +386,7 @@ def checkout():
         tmp = c.fetchone()[0]
 
         if tmp:
-            flash('Quantity of one of more items exceed our current stock for said item', 'danger')
+            flash('Quantity of one of more items exceed our current stock', 'danger')
             return redirect(url_for('basket'))
 
         sql = """SELECT Users.fName, Users.lName, Users.adress, Users.country, Users.phone, Users.email FROM Users WHERE ID = %s"""
@@ -412,7 +413,7 @@ def checkout():
                 orderID = c.fetchone()[0]
 
                 sql = """SELECT Basket.amount, Products.ID, Products.price, Products.stock FROM Basket INNER JOIN Products 
-                ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
+                ON Basket.productID=Products.ID WHERE Basket.userID = %s AND Products.discontinued = 0;"""
                 c.execute(sql,idTuple)
                 items = c.fetchall()
                 for item in items:
