@@ -1,0 +1,70 @@
+{%extends "layout.html"%}
+{%block content%}
+
+<h1>Order manager</h1>
+<form action="" method="GET">
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="Shipped"{%if filtered.Shipped%} checked{%endif%}>
+        <label class="form-check-label">Shipped</label>
+    </div>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="Processing"{%if filtered.Processing%} checked{%endif%}>
+        <label class="form-check-label">Processing</label>
+    </div>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="Completed"{%if filtered.Completed%} checked{%endif%}>
+        <label class="form-check-label">Completed</label>
+    </div>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="Pending"{%if filtered.Pending%} checked{%endif%}>
+        <label class="form-check-label">Pending</label>
+    </div>
+    <button class="btn btn-primary" type="submit">Filter</button>
+</form>
+{%if orders%}
+    <!--order_keys=('id', 'orderStatus', 'orderDate', 'userID')-->
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Order ID</th>
+                <th scope="col">Status</th>
+                <th scope="col">Order Date</th>
+                <th scope="col">User ID</th>
+            </tr>
+        </thead>
+        <tbody>
+            {%for order in orders%}
+                <tr>
+                    <th scope="row">
+                        <a href="{{ url_for('order', orderID=order.id) }}">{{order.id}}</a>
+                    </th>
+                    <td>
+                        <form method="post" action="">
+                            <div class="form-row">
+                                <div class="col">
+                                    <input type="hidden" name="order_ID" value="{{order.id}}">
+                                    <select class="form-control" name="status">
+                                        <option value="Shipped" {%if order.orderStatus == 'Shipped'%}selected{%endif%}>Shipped</option>
+                                        <option value="Processing" {%if order.orderStatus == 'Processing'%}selected{%endif%}>Processing</option>
+                                        <option value="Completed" {%if order.orderStatus == 'Completed'%}selected{%endif%}>Completed</option>
+                                        <option value="Pending" {%if order.orderStatus == 'Pending'%}selected{%endif%}>Pending</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <button type="submit" class="btn btn-primary" name="update">Update Status</button>
+                                </div>
+                            </div>
+                        </form>
+                    </td>
+                    <td>{{order.orderDate}}</td>
+                    <td>{{order.userID}}</td>
+                </tr>
+            {%endfor%}       
+        </tbody>
+    </table>
+{% else %}
+    <p class="danger">No orders found</p>
+{% endif %}
+
+    
+{%endblock content%}

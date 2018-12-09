@@ -21,8 +21,8 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    passwd="D0018Epassword",
-    #passwd="D0018Epass",
+    #passwd="D0018Epassword",
+    passwd="D0018Epass",
     database="webshopDB"
 )
 
@@ -67,7 +67,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS Basket(
 
 c.execute("""CREATE TABLE IF NOT EXISTS Orders(
     id int auto_increment,
-    orderStatus varchar(32),
+    orderStatus varchar(32) DEFAULT 'Pending',
     orderDate DATE,
     userID int,
     PRIMARY KEY (id),
@@ -109,7 +109,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS Comments(
 @app.route("/home", methods=['GET','POST'])
 def home():
     limit = 100
-    meme = requests.get('https://www.reddit.com/r/dankmemes/search.json?q=a&sort=hot&restrict_sr=1&limit={}'.format(limit), headers = {'User-agent': 'your bot 0.1'}).json()
+    meme = requests.get('https://www.reddit.com/r/dankmemes/search.json?q=a&sort=new&restrict_sr=1&limit={}'.format(limit), headers = {'User-agent': 'your bot 0.1'}).json()
     meme=meme['data']['children'][random.randrange(limit)]['data']
     product_name = ''
     discontinued = 0
@@ -143,17 +143,19 @@ def register():
     
     if request.method =='POST':
         f = request.form
+        if f['pass1'] != f['pass2']:
+            return redirect(url_for('register', pass_msg="Passwords don't match", email=f['email']))
         c.execute("select * from Users where email = %s;", (f['email'],))
         if c.fetchone():
-            return render_template('register.html', error="email already taken")
+            return redirect(url_for('register', email_msg="email already taken"))
         sql = "insert into Users (email, pWord, admin) values (%s, %s, %s);"
-        val = (f['email'], f['pass'], 1 if f['email'] == 'admin@admin.admin' else 0)
+        val = (f['email'], f['pass1'], 1 if f['email'] == 'admin@admin.admin' else 0)
         c.execute(sql, val)
         db.commit()                   
         flash('User successfully created! customer id: {}'.format(c.lastrowid), 'success')
-        return redirect(url_for('login'))
-        
-    return render_template('register.html', title='Ooh new member')
+        return redirect(url_for('login', email=f['email']))
+    msg=request.args
+    return render_template('register.html', title='Ooh new member', msg=msg)
 
 
 
@@ -181,15 +183,86 @@ def login():
                 return redirect(url_for('home'))  
             #fel password                           
             else:
-                return render_template('login.html', passwmsg='wrong password', email = femail)
+                return redirect(url_for('login', passw_msg='wrong password', email = femail))
         #fel email
         else:
-            return render_template('login.html', emailmsg='wrong email')
-        
-        
-        
-    return render_template('login.html')
+            return redirect(url_for('login', email_msg='wrong email'))
+    
+    msg = request.args  
+    return render_template('login.html', msg = msg)
 
+@app.route("/order_manager", methods=['GET','POST'])
+def order_manager():
+    if 'ID' in session and session['admin'] == 1:
+        if request.method == 'POST':
+            form = request.form
+            print(form)
+            #update status
+            if 'update' in form:
+                c.execute("update Orders set orderStatus = %s where id = %s;", (form['status'], form['order_ID']))
+                db.commit()
+                redirect(url_for('order_manager', **request.args))
+
+        res = request.args
+        print(res)
+        sql_where=" where FALSE"
+        if 'Pending' in res:
+            sql_where += " or orderStatus = 'Pending'"
+
+        if 'Shipped' in res:
+            sql_where += " or orderStatus = 'Shipped'"
+        
+        if 'Processing' in res:
+            sql_where += " or orderStatus = 'Processing'"
+
+        if 'Completed' in res:
+            sql_where += " or orderStatus = 'Completed'"
+               
+
+
+        sql = "select id, orderStatus, orderDate, userID from Orders" + sql_where + ";"
+        c.execute(sql)
+        orders = []
+        order_keys=('id', 'orderStatus', 'orderDate', 'userID')
+        for order in c.fetchall():
+            orders.append(dict(zip(order_keys, order)))
+
+        return render_template('order_manager.html', orders=orders, filtered = res)
+    else:
+        flash("Access denied! You need admin privileges to manage orders", 'danger')
+        return redirect(url_for('home'))
+
+@app.route("/order/<int:orderID>")
+def order(orderID):
+    order_keys=('id', 'orderStatus', 'orderDate', 'userID')
+    c.execute("select id, orderStatus, orderDate, userID from Orders where id = %s;", (orderID,))
+    order = c.fetchone()
+    if order:
+        order = dict(zip(order_keys, order))
+        if 'ID' in session and (order.get('userID') == session['ID'] or session['admin'] == 1):
+            #access granted ( to order user and admin)
+            transaction_keys = 'productID', 'amount', 'cost'
+            sql = """select productID, amount, cost 
+            from Transactions 
+            where orderID = %s;
+            """
+            val = (orderID,)
+            c.execute(sql, val)
+            transactions = []
+            for transaction in c.fetchall():
+                transactions.append(dict(zip(transaction_keys, transaction)))
+
+            return render_template('order.html', order = order, transactions = transactions)
+            
+        else:
+            #access denied
+            flash("Access denied! This is not your order",'danger')
+        return redirect(url_for('home'))
+    else:
+        #not a valid page
+        flash("no order with id: {}, exists".format(orderID),'danger')
+        return redirect(url_for('home'))
+    
 
 
 
@@ -297,9 +370,12 @@ def product(productID):
 
 @app.route("/logout")
 def logout():
-    session.pop('ID', None)
-    session.pop('admin', None)
-    flash("You are now logged out", 'success')
+    if 'ID' in session:
+        session.pop('ID', None)
+        session.pop('admin', None)
+        flash("You are now logged out", 'success')
+    else:
+        flash("You are already logged out", 'warning')
     return redirect(url_for('home'))
 
 @app.route("/addProduct", methods=['GET','POST'])
@@ -327,8 +403,7 @@ def basket():
     if 'ID' in session:
         val = session['ID']
         
-        sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON
-        Basket.productID=Products.ID WHERE Basket.userID = %s AND Products.discontinued = 0;"""
+        sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
         c.execute(sql,(val,))
         
         keys = ('userID', 'amount', 'productID', 'productPrice', 'productName')
@@ -371,7 +446,7 @@ def checkout():
     if 'ID' in session:
         idTuple = (session['ID'],)
 
-        sql = """SELECT sum(Basket.amount*Products.price),sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s AND Products.discontinued = 0;"""
+        sql = """SELECT sum(Basket.amount*Products.price),sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
         c.execute(sql,idTuple)
         tmp = c.fetchone()
         if not tmp[1]:
@@ -386,7 +461,7 @@ def checkout():
         tmp = c.fetchone()[0]
 
         if tmp:
-            flash('Quantity of one of more items exceed our current stock', 'danger')
+            flash('Quantity of one of more items exceed our current stock for said item', 'danger')
             return redirect(url_for('basket'))
 
         sql = """SELECT Users.fName, Users.lName, Users.adress, Users.country, Users.phone, Users.email FROM Users WHERE ID = %s"""
@@ -413,7 +488,7 @@ def checkout():
                 orderID = c.fetchone()[0]
 
                 sql = """SELECT Basket.amount, Products.ID, Products.price, Products.stock FROM Basket INNER JOIN Products 
-                ON Basket.productID=Products.ID WHERE Basket.userID = %s AND Products.discontinued = 0;"""
+                ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
                 c.execute(sql,idTuple)
                 items = c.fetchall()
                 for item in items:
@@ -426,6 +501,7 @@ def checkout():
                 c.execute("DELETE FROM Basket WHERE Basket.userID=%s;",(session['ID'],))
                 db.commit()
                 flash('Order has been placed', 'success')
+                update_basket()
                 return redirect(url_for('home'))
             elif 'basket' in request.form:
                 return redirect(url_for('basket'))

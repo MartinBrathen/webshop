@@ -1,22 +1,33 @@
 {%extends "layout.html"%}
 {%block content%}
-	<h1>Add New Item</h1>
-	<form method="POST" action="">
-		pName<br>
-		<input type="text" name="pName" required><br>
-		
-		stock<br>
-		<input type="number" name="stock" required><br>
-		
-		price<br>
-		<input type="number" name="price" required><br>
-		
-		descr<br>
-		<input type="text" name="descr"><br>
-		
-		pic<br>
-		<input type="text" name="pic"><br>
-		
-		<input type="submit" value="Submit">
-	</form>
+	<fieldset class="card p-3">
+		<legend class="w-auto">Add New Item</legend>
+		<form method="POST" action="">
+			<div class="form-group">
+				<label>pName</label>
+				<input class="form-control" type="text" name="pName" required>
+			</div>
+
+			<div class="form-group">
+				<label>stock</label>
+				<input class="form-control" type="number" name="stock" required>
+			</div>
+	
+			<div class="form-group">
+				<label>price</label>
+				<input class="form-control" type="number" name="price" required>
+			</div>
+
+			<div class="form-group">
+				<label>descr</label>
+				<input class="form-control" type="text" name="descr">
+			</div>
+			
+			<div class="form-group">
+				<label>pic</label>
+				<input class="form-control" type="text" name="pic">
+			</div>
+
+			<Button type="submit" class="btn btn-primary">Submit</Button>
+	</fieldset>
 {%endblock content%}

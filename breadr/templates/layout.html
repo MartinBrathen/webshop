@@ -32,6 +32,7 @@
 			{%if session['ID']%}
 				<!-- LOGGED IN AND ADMIN -->				
 				{%if session['admin'] == 1%}
+					<li class="nav-item"><a class="nav-link" href="{{url_for('order_manager', Shipped='on', Processing='on', Pending='on')}}">Manage Orders</a></li>
 					<li class="nav-item"><a class="nav-link" href="{{url_for('add_admin')}}">Add/remove admin</a></li>
 				{%endif%}
 				<li class="nav-item"><a class="nav-link" href="{{url_for('basket')}}">Basket({{ session['basket'] }})</a></li>

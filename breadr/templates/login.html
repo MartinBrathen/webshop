@@ -1,19 +1,19 @@
 {%extends "layout.html"%}
 {%block content%}
 	<fieldset class="card p-3">
-		<legend class="w-auto">step 1</legend>
+		<legend class="w-auto">Login</legend>
 		<form method="POST" action="">
 			<div class="form-group">
 				<label>E-mail</label>
-				<input class="form-control {%if emailmsg%}is-invalid{%endif%}" type="text" name="email" {% if email %} value="{{ email }}" {% else %} placeholder="johndoe@mail.com" {% endif %}pattern="[^\s]+@[^\s]+\.[^\s]+" required>	
-				{%if emailmsg%}<div class="invalid-feedback">{{emailmsg}}</div>{%endif%}
+				<input class="form-control {%if msg.email_msg%}is-invalid{%endif%}" type="text" name="email" {% if msg.email %} value="{{ msg.email }}" {% else %} placeholder="johndoe@mail.com" {% endif %}pattern="[^\s]+@[^\s]+\.[^\s]+" required>	
+				{%if msg.email_msg%}<div class="invalid-feedback">{{msg.email_msg}}</div>{%endif%}
 			</div>
 			
 			
 			<div class="form-group">
 				<label>Password</label>
-				<input type="password" name="pass" class="form-control {%if passwmsg%}is-invalid{%endif%}">
-				{%if passwmsg%}<div class="invalid-feedback">{{passwmsg}}</div>{%endif%}
+				<input type="password" name="pass" class="form-control {%if msg.passw_msg%}is-invalid{%endif%}">
+				{%if msg.passw_msg%}<div class="invalid-feedback">{{msg.passw_msg}}</div>{%endif%}
 			</div>
 				
 			<button type="submit" class="btn btn-primary">Login!</button>
