@@ -127,11 +127,15 @@ def home():
             product_name = request.args.get('product_name')
 
     print(product_name, discontinued, in_stock)
-    c.execute("""select * from Products where (discontinued = {} or discontinued = 0) and pName like '%{}%' and stock >= {};""".format(discontinued, product_name, in_stock))
+   
+    cur = db.cursor()
+    cur.execute("""select * from Products where (discontinued = {} or discontinued = 0) and pName like '%{}%' and stock >= {};""".format(discontinued, product_name, in_stock))
+    
     items = []
     keys = ('pName', 'stock', 'price', 'descr', 'pic', 'discontinued', 'ID')
     for fitem in c.fetchall():
         items.append(dict(zip(keys, fitem)))
+    cur.close()
     return render_template('home.html', items=items, query = request.args, meme = meme)
 
 
