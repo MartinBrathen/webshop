@@ -156,13 +156,14 @@ def register():
         if cur.fetchone():
             return redirect(url_for('register', email_msg="email already taken"))
         sql = "insert into Users (email, pWord, admin) values (%s, %s, %s);"
-<<<<<<< HEAD
+#<<<<<<< HEAD
 
         pass1 = hashlib.sha224(f['pass1']).hexdigest() # sha224 hash of password
         val = (f['email'], pass1, 1 if f['email'] == 'admin@admin.admin' else 0)
         c.execute(sql, val)
         db.commit()                   
         flash('User successfully created! customer id: {}'.format(c.lastrowid), 'success')
+'''
 =======
         val = (f['email'], f['pass1'], 1 if f['email'] == 'admin@admin.admin' else 0)
         cur.execute(sql, val)
@@ -170,6 +171,7 @@ def register():
 		cur.close()
         flash('User successfully created! customer id: {}'.format(cur.lastrowid), 'success')
 >>>>>>> cee1d4b7289d583cd055d9230743ddd41def9d67
+'''
         return redirect(url_for('login', email=f['email']))
     msg=request.args
     return render_template('register.html', title='Ooh new member', msg=msg)
