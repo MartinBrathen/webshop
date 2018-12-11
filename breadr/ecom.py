@@ -105,6 +105,8 @@ c.execute("""CREATE TABLE IF NOT EXISTS Comments(
     FOREIGN KEY (productID) REFERENCES Products(ID)
 );""")
 
+c.close()
+
 @app.route("/")
 @app.route("/home", methods=['GET','POST'])
 def home():
@@ -133,7 +135,7 @@ def home():
     
     items = []
     keys = ('pName', 'stock', 'price', 'descr', 'pic', 'discontinued', 'ID')
-    for fitem in c.fetchall():
+    for fitem in cur.fetchall():
         items.append(dict(zip(keys, fitem)))
     cur.close()
     return render_template('home.html', items=items, query = request.args, meme = meme)
@@ -149,14 +151,16 @@ def register():
         f = request.form
         if f['pass1'] != f['pass2']:
             return redirect(url_for('register', pass_msg="Passwords don't match", email=f['email']))
-        c.execute("select * from Users where email = %s;", (f['email'],))
-        if c.fetchone():
+		cur = db.cursor()
+        cur.execute("select * from Users where email = %s;", (f['email'],))
+        if cur.fetchone():
             return redirect(url_for('register', email_msg="email already taken"))
         sql = "insert into Users (email, pWord, admin) values (%s, %s, %s);"
         val = (f['email'], f['pass1'], 1 if f['email'] == 'admin@admin.admin' else 0)
-        c.execute(sql, val)
-        db.commit()                   
-        flash('User successfully created! customer id: {}'.format(c.lastrowid), 'success')
+        cur.execute(sql, val)
+        db.commit() 
+		cur.close()
+        flash('User successfully created! customer id: {}'.format(cur.lastrowid), 'success')
         return redirect(url_for('login', email=f['email']))
     msg=request.args
     return render_template('register.html', title='Ooh new member', msg=msg)
@@ -173,8 +177,9 @@ def login():
         femail = request.form['email']
         fpassw = request.form['pass']
         sql = "select pWord, ID, admin from Users where email = %s;"
-        c.execute(sql, (femail,))
-        result = c.fetchone()
+        cur = db.cursor()
+		cur.execute(sql, (femail,))
+        result = cur.fetchone()
         #email finns
         if result:
             result = dict(zip(('pass', 'ID', 'admin'), result))
@@ -203,8 +208,10 @@ def order_manager():
             print(form)
             #update status
             if 'update' in form:
-                c.execute("update Orders set orderStatus = %s where id = %s;", (form['status'], form['order_ID']))
+				cur = db.cursor()
+                cur.execute("update Orders set orderStatus = %s where id = %s;", (form['status'], form['order_ID']))
                 db.commit()
+				cur.close()
                 redirect(url_for('order_manager', **request.args))
 
         res = request.args
@@ -225,12 +232,13 @@ def order_manager():
 
 
         sql = "select id, orderStatus, orderDate, userID from Orders" + sql_where + ";"
-        c.execute(sql)
+        cur = db.cursor()
+		cur.execute(sql)
         orders = []
         order_keys=('id', 'orderStatus', 'orderDate', 'userID')
-        for order in c.fetchall():
+        for order in cur.fetchall():
             orders.append(dict(zip(order_keys, order)))
-
+		cur.close()
         return render_template('order_manager.html', orders=orders, filtered = res)
     else:
         flash("Access denied! You need admin privileges to manage orders", 'danger')
@@ -239,8 +247,10 @@ def order_manager():
 @app.route("/order/<int:orderID>")
 def order(orderID):
     order_keys=('id', 'orderStatus', 'orderDate', 'userID')
-    c.execute("select id, orderStatus, orderDate, userID from Orders where id = %s;", (orderID,))
-    order = c.fetchone()
+    cur  = db.cursor()
+	cur.execute("select id, orderStatus, orderDate, userID from Orders where id = %s;", (orderID,))
+	order = cur.fetchone()
+	cur.close()
     if order:
         order = dict(zip(order_keys, order))
         if 'ID' in session and (order.get('userID') == session['ID'] or session['admin'] == 1):
@@ -251,11 +261,12 @@ def order(orderID):
             where orderID = %s;
             """
             val = (orderID,)
-            c.execute(sql, val)
+            cur = db.cursor()
+			cur.execute(sql, val)
             transactions = []
-            for transaction in c.fetchall():
+            for transaction in cur.fetchall():
                 transactions.append(dict(zip(transaction_keys, transaction)))
-
+			cur.close()
             return render_template('order.html', order = order, transactions = transactions)
             
         else:
@@ -273,9 +284,11 @@ def order(orderID):
 @app.route("/product/<int:productID>", methods=['GET', 'POST'])
 def product(productID):
     sql = "select * from Products where ID=%s;"
-    c.execute(sql, (productID,))
-    product = c.fetchone()
-    
+    cur = db.cursor()
+	cur.execute(sql, (productID,))
+    product = cur.fetchone()
+    cur.close()
+	
     if product:
         keys = ('pName', 'stock', 'price', 'descr', 'pic', 'discontinued', 'ID')
 
@@ -287,8 +300,10 @@ def product(productID):
             userID = session['ID']
 
         sql="select rating, userID from Ratings where productID = %s"
-        c.execute(sql, (productID,))
-        ratings = c.fetchall()
+        cur = db.cursor()
+		cur.execute(sql, (productID,))
+        ratings = cur.fetchall()
+		cur.close()
         for rating, ID in ratings:
             if rating != None:
                 tot_rating += 2*rating-1
@@ -297,22 +312,25 @@ def product(productID):
                 my_rating = rating
 
         getCommentData_sql = "select commentS, tStamp, email, Comments.ID from Comments, Users where Users.ID = Comments.userID and productID = %s order by tStamp desc;"
-        c.execute(getCommentData_sql, (productID,))
+        cur = db.cursor()
+		cur.execute(getCommentData_sql, (productID,))
         comments = []
         keys = ('commentS', 'tStamp', 'email', 'id')
-        for comment in c.fetchall():
+        for comment in cur.fetchall():
             comments.append(dict(zip(keys, comment)))
-
+		cur.close()
+		
         if 'ID' in session:  
             if request.method == 'POST':
                 vote_sql = """insert into Ratings (rating, userID, productID) values (%s, %s, %s) 
                     on duplicate key update rating = %s;""" 
-
+				cur = db.cursor()
                 if 'up' in request.form:
                     #updoot code
                     my_rating = None if my_rating == 1 else 1
                     val=(1, session['ID'], productID, my_rating)
-                    c.execute(vote_sql,val)
+                    
+					cur.execute(vote_sql,val)
                     db.commit()
                     return redirect(url_for('product', productID=productID))
 
@@ -320,7 +338,7 @@ def product(productID):
                     #downdoot code
                     my_rating = None if my_rating == 0 else 0
                     val=(0, session['ID'], productID, my_rating)
-                    c.execute(vote_sql,val)
+                    cur.execute(vote_sql,val)
                     db.commit()
                     return redirect(url_for('product', productID=productID))
 
@@ -332,7 +350,7 @@ def product(productID):
                         sql = """insert into Basket (userID, productID, amount) values (%s, %s, %s) 
                         on duplicate key update amount = amount + %s;"""
                         val = (session['ID'], productID, quantity, quantity)
-                        c.execute(sql, val)
+                        cur.execute(sql, val)
                         db.commit()
                         update_basket()
                         flash("{} {} items to the basket".format('added' if quantity > 0 else 'removed', abs(quantity)), 'success')
@@ -342,7 +360,7 @@ def product(productID):
                     comment = request.form['comment']
                     sql = """insert into Comments (commentS, userID, productID) values (%s, %s, %s);"""
                     val = (comment, session['ID'], productID)
-                    c.execute(sql, val)
+                    cur.execute(sql, val)
                     db.commit()
                     return redirect(url_for('product', productID=productID))
 
@@ -358,16 +376,16 @@ def product(productID):
                     discontinued = %s
                     where ID = %s;"""
                     val = (res['name'], res['stock'], res['price'], res['description'], res['pic'], 0 if res.get('discontinued') ==  None else 1, productID)
-                    c.execute(sql,val)
+                    cur.execute(sql,val)
                     db.commit()
                     flash("Changes committed!", 'success')
                     return redirect(url_for('product', productID=productID))
                 
                 elif 'delete' in request.form:
-                    c.execute("""update Comments set commentS = "DELETED" where ID = %s;""", (request.form.get('comment_ID'),))
+                    cur.execute("""update Comments set commentS = "DELETED" where ID = %s;""", (request.form.get('comment_ID'),))
                     db.commit()
                     return redirect(url_for('product', productID=productID))
-
+				cur.close()
         return render_template('product.html', product=product, rating = tot_rating, my_rating = my_rating, comments = comments)
     else:
         return "{} is not a valid product ID".format(productID)
@@ -390,8 +408,10 @@ def addProduct():
             f = parseForm(request.form)
             sql = """insert into Products(pName, stock, price, descr, pic) values (%s, %s, %s, %s, %s);"""
             val = (f['pName'], f['stock'], f['price'], f['descr'], f['pic'])
-            c.execute(sql, val)
+            cur = db.cursor()
+			cur.execute(sql, val)
             db.commit()
+			cur.close()
             flash("New product '{}' added, you can edit data on product page".format(f['pName']), 'success')
             return redirect('addProduct')
             
@@ -408,36 +428,40 @@ def basket():
         val = session['ID']
         
         sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
-        c.execute(sql,(val,))
+        cur  = db.cursor()
+		cur.execute(sql,(val,))
         
         keys = ('userID', 'amount', 'productID', 'productPrice', 'productName')
-        for fitem in c.fetchall():
+        for fitem in cur.fetchall():
             grandTotal = grandTotal + fitem[1]*fitem[3]
             items.append(dict(zip(keys, fitem)))
-    
+		cur.close()
 
       
         if request.method == 'POST':
+			cur = db.cursor()
             if 'update' in request.form:
                 newAmount = request.form['update']
-                c.execute("""SELECT Products.stock FROM Products WHERE Products.ID=%s""", (request.form['update'],))
-                inStock=c.fetchone()[0]
+                
+				cur.execute("""SELECT Products.stock FROM Products WHERE Products.ID=%s""", (request.form['update'],))
+                inStock=cur.fetchone()[0]
                 if int(inStock) > int(newAmount) > 0:
-                    c.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s;",(newAmount, session['ID'], request.form['update']))
+                    cur.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s;",(newAmount, session['ID'], request.form['update']))
                     db.commit()
                 elif int(newAmount) <= 0:
-                    c.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['update']))
+                    cur.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['update']))
                     db.commit()  
                 update_basket() 
                 return redirect(url_for('basket'))
             elif 'delete' in request.form:
-                c.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['delete']))
+                cur.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['delete']))
                 db.commit()
                 update_basket() 
                 return redirect(url_for('basket'))
             elif 'checkout' in request.form:
                 return redirect(url_for('checkout'))
-    
+			cur.close()
+			
     return render_template('basket.html', items = items, grandTotal = grandTotal)
 
 @app.route("/checkout", methods=['GET','POST',''])
@@ -451,8 +475,10 @@ def checkout():
         idTuple = (session['ID'],)
 
         sql = """SELECT sum(Basket.amount*Products.price),sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
-        c.execute(sql,idTuple)
-        tmp = c.fetchone()
+        cur = db.cursor()
+		cur.execute(sql,idTuple)
+        tmp = cur.fetchone()
+		cur.close()
         if not tmp[1]:
             flash('You have no items in cart', 'danger')
             return redirect(url_for('basket'))
@@ -461,18 +487,22 @@ def checkout():
         totalAmount = tmp[1]
 
         sql = """SELECT sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s AND Basket.amount > Products.stock;"""
-        c.execute(sql,idTuple)
-        tmp = c.fetchone()[0]
-
+        cur = db.close()
+		cur.execute(sql,idTuple)
+        tmp = cur.fetchone()[0]
+		cur.close()
+		
         if tmp:
             flash('Quantity of one of more items exceed our current stock for said item', 'danger')
             return redirect(url_for('basket'))
 
         sql = """SELECT Users.fName, Users.lName, Users.adress, Users.country, Users.phone, Users.email FROM Users WHERE ID = %s"""
-        c.execute(sql,idTuple)
+        cur = db.cursor()
+		cur.execute(sql,idTuple)
         keys = ('userFName', 'userLName', 'userAdress', 'userCountry', 'userPhone', 'userEmail')
-        user = (dict(zip(keys,c.fetchone())))
-        if (user.get('userFName') and user.get('userLName') and user.get('userAdress') and user.get('userCountry') and user.get('userEmail')):
+        user = (dict(zip(keys,cur.fetchone())))
+        cur.close()
+		if (user.get('userFName') and user.get('userLName') and user.get('userAdress') and user.get('userCountry') and user.get('userEmail')):
             sufficientInfo = True
 
         if request.method == 'POST':
@@ -480,30 +510,32 @@ def checkout():
 
 
                 sql = """SELECT sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s AND Basket.amount > Products.stock;"""
-                c.execute(sql,idTuple)
-                tmp = c.fetchone()[0]
-
+                cur = db.cursor()
+				cur.execute(sql,idTuple)
+                tmp = cur.fetchone()[0]
+				
                 if tmp:
                     flash('Quantity of one of more items exceed our current stock for said item', 'danger')
                     return redirect(url_for('basket'))
 
-                c.execute("INSERT INTO Orders (id, orderDate,userID) VALUES (NULL,CURRENT_DATE,%s);",(session['ID'],))
-                c.execute("SELECT LAST_INSERT_ID()")
-                orderID = c.fetchone()[0]
+                cur.execute("INSERT INTO Orders (id, orderDate,userID) VALUES (NULL,CURRENT_DATE,%s);",(session['ID'],))
+                cur.execute("SELECT LAST_INSERT_ID()")
+                orderID = cur.fetchone()[0]
 
                 sql = """SELECT Basket.amount, Products.ID, Products.price, Products.stock FROM Basket INNER JOIN Products 
                 ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
-                c.execute(sql,idTuple)
-                items = c.fetchall()
+                cur.execute(sql,idTuple)
+                items = cur.fetchall()
                 for item in items:
                     cost = int(item[2])*int(item[0])
-                    c.execute("""INSERT INTO Transactions (productID,amount,orderID,cost) VALUES (%s,%s,%s,%s)""",(item[1],item[0],orderID,cost))
+                    cur.execute("""INSERT INTO Transactions (productID,amount,orderID,cost) VALUES (%s,%s,%s,%s)""",(item[1],item[0],orderID,cost))
                     newStock = int(item[3]) - int(item[0])
-                    c.execute("""UPDATE Products SET Products.stock = %s WHERE Products.ID = %s""",(newStock,item[1]))
+                    cur.execute("""UPDATE Products SET Products.stock = %s WHERE Products.ID = %s""",(newStock,item[1]))
 
 
-                c.execute("DELETE FROM Basket WHERE Basket.userID=%s;",(session['ID'],))
+                cur.execute("DELETE FROM Basket WHERE Basket.userID=%s;",(session['ID'],))
                 db.commit()
+				cur.close()
                 flash('Order has been placed', 'success')
                 update_basket()
                 return redirect(url_for('home'))
@@ -527,22 +559,27 @@ def add_admin():
             f = parseForm(request.form)
             sql = """select email, admin, ID from Users where email = %s;"""
             val = (f.get('email'),)
-            c.execute(sql, val)
-            res = c.fetchone()
+			cur = db.cursor()
+            cur.execute(sql, val)
+            res = cur.fetchone()
+			cur.close()
             if res:
                 res = dict(zip(('email', 'admin', 'ID'), res))
                 if res.get('ID') == session['ID']:
                     return redirect(url_for('add_admin', email_msg="you cant remove your own privilege"))
                 admin = 1 if (res.get('admin') == 0 or res.get('admin') == None) else 0
                 sql = """update Users set admin = %s where email = %s;"""
-                c.execute(sql, (admin, res.get('email')))
+                cur = db.cursor()
+				cur.execute(sql, (admin, res.get('email')))
                 db.commit()
+				cur.close()
                 flash("Admin privilege {} user with email: {}".format("given to" if admin == 1 else "removed from", f.get('email')), 'success')
                 return redirect('add_admin')
             else:
                 print("det fanns inte")
                 return redirect(url_for('add_admin', email_msg="no such email found"))
-           
+			
+			
             return redirect('add_admin')
         msg = request.args
         print("msg: {}".format(msg))
@@ -566,10 +603,12 @@ def update_basket(userID = None):
     if userID == None:
         userID = session['ID']
     sql = """select amount from Basket where userID = %s"""
-    c.execute(sql, (userID,))
+    cur = db.cursur()
+	cur.execute(sql, (userID,))
     total_in_basket = 0
-    for amount in c.fetchall():
+    for amount in cur.fetchall():
         total_in_basket += amount[0]
+	cur.close()
     session['basket'] = total_in_basket
 
 
