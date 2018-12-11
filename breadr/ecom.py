@@ -4,6 +4,7 @@ from flask import Flask, render_template, url_for, request, redirect, flash, ses
 import mysql.connector
 import requests
 import random
+import hashlib
 
 app = Flask(__name__)
 app.secret_key = "0ul9oiewdsrukoiwsze" #generera säker nyckel
@@ -21,8 +22,7 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    #passwd="D0018Epassword",
-    passwd="D0018Epass",
+    passwd="D0018Epassword",
     database="webshopDB"
 )
 
@@ -149,7 +149,9 @@ def register():
         if c.fetchone():
             return redirect(url_for('register', email_msg="email already taken"))
         sql = "insert into Users (email, pWord, admin) values (%s, %s, %s);"
-        val = (f['email'], f['pass1'], 1 if f['email'] == 'admin@admin.admin' else 0)
+
+        pass1 = hashlib.sha224(f['pass1']).hexdigest() # sha224 hash of password
+        val = (f['email'], pass1, 1 if f['email'] == 'admin@admin.admin' else 0)
         c.execute(sql, val)
         db.commit()                   
         flash('User successfully created! customer id: {}'.format(c.lastrowid), 'success')
@@ -167,7 +169,7 @@ def login():
         
     elif request.method == 'POST':
         femail = request.form['email']
-        fpassw = request.form['pass']
+        fpassw = hashlib.sha224(request.form['pass']).hexdigest()
         sql = "select pWord, ID, admin from Users where email = %s;"
         c.execute(sql, (femail,))
         result = c.fetchone()
