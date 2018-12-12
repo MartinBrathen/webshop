@@ -129,7 +129,7 @@ def home():
             product_name = request.args.get('product_name')
 
     print(product_name, discontinued, in_stock)
-   
+    db.reconnect()
     cur = db.cursor()
     cur.execute("""select * from Products where (discontinued = {} or discontinued = 0) and pName like '%{}%' and stock >= {};""".format(discontinued, product_name, in_stock))
     
@@ -151,6 +151,7 @@ def register():
         f = request.form
         if f['pass1'] != f['pass2']:
             return redirect(url_for('register', pass_msg="Passwords don't match", email=f['email']))
+        db.reconnect()
         cur = db.cursor()
         cur.execute("select * from Users where email = %s;", (f['email'],))
         if cur.fetchone():
@@ -180,6 +181,7 @@ def login():
         femail = request.form['email']
         fpassw = hashlib.sha224(request.form['pass']).hexdigest()
         sql = "select pWord, ID, admin from Users where email = %s;"
+        db.reconnect()
         cur = db.cursor()
         cur.execute(sql, (femail,))
         result = cur.fetchone()
@@ -206,6 +208,7 @@ def login():
 @app.route("/order_manager", methods=['GET','POST'])
 def order_manager():
     if 'ID' in session and session['admin'] == 1:
+        db.reconnect()
         if request.method == 'POST':
             form = request.form
             print(form)
@@ -250,6 +253,7 @@ def order_manager():
 @app.route("/order/<int:orderID>")
 def order(orderID):
     order_keys=('id', 'orderStatus', 'orderDate', 'userID')
+    db.reconnect()
     cur  = db.cursor()
     cur.execute("select id, orderStatus, orderDate, userID from Orders where id = %s;", (orderID,))
     order = cur.fetchone()
@@ -287,6 +291,7 @@ def order(orderID):
 @app.route("/product/<int:productID>", methods=['GET', 'POST'])
 def product(productID):
     sql = "select * from Products where ID=%s;"
+    db.reconnect()
     cur = db.cursor()
     cur.execute(sql, (productID,))
     product = cur.fetchone()
@@ -411,6 +416,7 @@ def addProduct():
             f = parseForm(request.form)
             sql = """insert into Products(pName, stock, price, descr, pic) values (%s, %s, %s, %s, %s);"""
             val = (f['pName'], f['stock'], f['price'], f['descr'], f['pic'])
+            db.reconnect()
             cur = db.cursor()
             cur.execute(sql, val)
             db.commit()
@@ -431,6 +437,7 @@ def basket():
         val = session['ID']
         
         sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
+        db.reconnect()
         cur  = db.cursor()
         cur.execute(sql,(val,))
         
@@ -476,6 +483,7 @@ def checkout():
         idTuple = (session['ID'],)
 
         sql = """SELECT sum(Basket.amount*Products.price),sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
+        db.reconnect()
         cur = db.cursor()
         cur.execute(sql,idTuple)
         tmp = cur.fetchone()
@@ -507,6 +515,7 @@ def checkout():
             sufficientInfo = True
 
         if request.method == 'POST':
+            db.reconnect()
             if 'order' in request.form and totalAmount > 0:
 
 
@@ -560,6 +569,7 @@ def add_admin():
             f = parseForm(request.form)
             sql = """select email, admin, ID from Users where email = %s;"""
             val = (f.get('email'),)
+            db.reconnect()
             cur = db.cursor()
             cur.execute(sql, val)
             res = cur.fetchone()
@@ -604,6 +614,7 @@ def update_basket(userID = None):
     if userID == None:
         userID = session['ID']
     sql = """select amount from Basket where userID = %s"""
+    db.reconnect()
     cur = db.cursur()
     cur.execute(sql, (userID,))
     total_in_basket = 0
