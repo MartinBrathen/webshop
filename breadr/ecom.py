@@ -628,7 +628,7 @@ def update_basket(userID = None):
     if userID == None:
         userID = session['ID']
     sql = """select amount from Basket where userID = %s"""
-    cur = db.cursur()
+    cur = db.cursor()
     cur.execute(sql, (userID,))
     total_in_basket = 0
     for amount in cur.fetchall():
