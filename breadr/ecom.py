@@ -164,6 +164,16 @@ def register():
         cur.execute(sql, val)
         db.commit()                   
         flash('User successfully created! customer id: {}'.format(c.lastrowid), 'success')
+	
+	'''
+=======
+        val = (f['email'], f['pass1'], 1 if f['email'] == 'admin@admin.admin' else 0)
+        cur.execute(sql, val)
+        db.commit() 
+        cur.close()
+        flash('User successfully created! customer id: {}'.format(cur.lastrowid), 'success')
+>>>>>>> cee1d4b7289d583cd055d9230743ddd41def9d67
+'''
 
         return redirect(url_for('login', email=f['email']))
     msg=request.args
