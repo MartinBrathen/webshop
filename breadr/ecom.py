@@ -460,7 +460,7 @@ def basket():
                 
                 cur.execute("""SELECT Products.stock FROM Products WHERE Products.ID=%s""", (request.form['update'],))
                 inStock=cur.fetchone()[0]
-                if int(inStock) > int(newAmount) > 0:
+                if int(inStock) >= int(newAmount) > 0:
                     cur.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s;",(newAmount, session['ID'], request.form['update']))
                     db.commit()
                 elif int(newAmount) <= 0:
@@ -497,23 +497,32 @@ def checkout():
         cur = db.cursor()
         cur.execute(sql,idTuple)
         tmp = cur.fetchone()
+        print("first test")
+
         cur.close()
+
         if not tmp[1]:
             flash('You have no items in cart', 'danger')
             return redirect(url_for('basket'))
+        print('first and a half')
 
         grandTotal = tmp[0]
         totalAmount = tmp[1]
 
         sql = """SELECT sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s AND Basket.amount > Products.stock;"""
-        cur = db.close()
+        cur = db.cursor()
         cur.execute(sql,idTuple)
+        print('do i get this far?')
         tmp = cur.fetchone()[0]
         cur.close()
+
+        print('second test')
 		
         if tmp:
             flash('Quantity of one of more items exceed our current stock for said item', 'danger')
             return redirect(url_for('basket'))
+
+        print('third test')
 
         sql = """SELECT Users.fName, Users.lName, Users.adress, Users.country, Users.phone, Users.email FROM Users WHERE ID = %s"""
         cur = db.cursor()
