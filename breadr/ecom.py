@@ -153,6 +153,7 @@ def register():
         f = request.form
         if f['pass1'] != f['pass2']:
             return redirect(url_for('register', pass_msg="Passwords don't match", email=f['email']))
+        db.reconnect()
         cur = db.cursor()
         cur.execute("select * from Users where email = %s;", (f['email'],))
         if cur.fetchone():
@@ -163,18 +164,12 @@ def register():
         pass1 = hashlib.sha224(f['pass1']).hexdigest()
         val = (f['email'], pass1, 1 if f['email']
                == 'admin@admin.admin' else 0)
-        c.execute(sql, val)
-        db.commit()
-        flash('User successfully created! customer id: {}'.format(
-            c.lastrowid), 'success')
-
-        val = (f['email'], f['pass1'], 1 if f['email']
-               == 'admin@admin.admin' else 0)
         cur.execute(sql, val)
         db.commit()
-	cur.close()
+
         flash('User successfully created! customer id: {}'.format(
             cur.lastrowid), 'success')
+        cur.close()
         return redirect(url_for('login', email=f['email']))
     msg = request.args
     return render_template('register.html', title='Ooh new member', msg=msg)
