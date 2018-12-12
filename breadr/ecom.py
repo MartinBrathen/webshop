@@ -449,7 +449,7 @@ def basket():
         if request.method == 'POST':
             cur = db.cursor()
             if 'update' in request.form:
-                newAmount = request.form['update']
+                newAmount = request.form['amount']
                 
                 cur.execute("""SELECT Products.stock FROM Products WHERE Products.ID=%s""", (request.form['update'],))
                 inStock=cur.fetchone()[0]
@@ -459,14 +459,17 @@ def basket():
                 elif int(newAmount) <= 0:
                     cur.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['update']))
                     db.commit()  
-                update_basket() 
+                update_basket()
+                cur.close()
                 return redirect(url_for('basket'))
             elif 'delete' in request.form:
                 cur.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['delete']))
                 db.commit()
-                update_basket() 
+                update_basket()
+                cur.close()
                 return redirect(url_for('basket'))
             elif 'checkout' in request.form:
+                cur.close()
                 return redirect(url_for('checkout'))
             cur.close()
 			
