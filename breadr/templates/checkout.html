@@ -4,7 +4,7 @@
 	<div class="col">
 		<div class="row">
 			<form method="post" action="">
-				{% if sufficientInfo and grandTotal > 0 %}
+				{% if sufficientInfo %}
 					
 					<h3>Confirm order</h3>
 					First Name: {{user.userFName}}<br>
@@ -16,12 +16,6 @@
 					Subtotal: {{grandTotal/100}} kr<br>
 					<button type="submit" class="btn" name="order" value="">Place order</button>
 					
-					
-
-					
-				{% elif grandTotal <= 0 %}
-
-					<h3>You do not have any items in your basket</h3>
 
 				{% else %}
 					

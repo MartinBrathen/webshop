@@ -1,0 +1,31 @@
+{%extends "layout.html"%}
+{%block content%}
+    order id: {{order.id}}<br>
+    status: {{order.orderStatus}}<br>
+    Date: {{order.orderDate}}<br>
+    userID: {{order.userID}}<br>
+    <!--transaction_keys = 'productID', 'amount', 'cost'-->
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">productID</th>
+                <th scope="col">amount</th>
+                <th scope="col">cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            {%for transaction in transactions%}
+                <tr>
+                    <th scope="row">{{transaction.productID}}</th>
+                    <td>{{transaction.amount}}</td>
+                    <td>{{transaction.cost}}</td>
+                </tr>
+            {%endfor%}
+            
+        </tbody>
+    </table>
+    <a href="{{url_for('order_manager')}}">Go back to manager</a>
+
+   
+
+{%endblock content%}

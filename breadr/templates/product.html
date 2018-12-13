@@ -18,23 +18,47 @@
 		</div>
 		<div class="col">
 			{%if session['admin'] == 1%}
-				<form method="post" action="">
-					product name<br>
-					<input type="text" name="name" value="{{ product.pName }}" required><br>
-					description<br>
-					<textarea name="description" class="form-control">{{ product.descr }}</textarea><br>
-					stock<br>
-					<input type="number" name="stock" value="{{product.stock}}" required><br>
-					price<br>
-					<input type="number" name="price" value="{{ product.price }}" required><br>
-					pic adress<br>
-					<input type="text" name="pic" value="{{ product.pic }}"><br>
-					discontinued?:
-					<input type="checkbox" name="discontinued" 
-					{%if product.discontinued == 1%} checked{%endif%}
-					>
-					<button type="submit" class="btn" name="edit">save changes</button>
-				</form>
+				<fieldset class="card p-3">
+					<legend class="w-auto">Edit product data</legend>
+					<form method="post" action="">
+						<div class="form-group">
+							<label>Product name</label>
+							<input class="form-control" type="text" name="name" value="{{ product.pName }}" required>
+						</div>
+
+						<div class="form-group">
+							<label>Name</label>
+							<input class="form-control" type="text" name="name" value="{{ product.pName }}" required>
+						</div>
+						
+						<div class="form-group">
+							<label>Description</label>
+							<textarea class="form-control" name="description" class="form-control">{{ product.descr }}</textarea>
+						</div>
+
+						<div class="form-group">
+							<label>Stock</label>
+							<input class="form-control" type="number" name="stock" value="{{product.stock}}" required>
+						</div>
+
+						<div class="form-group">
+							<label>Price</label>
+							<input class="form-control" type="number" name="price" value="{{ product.price }}" required>
+						</div>
+						
+						<div class="form-group">
+							<label>pic adress</label>
+							<input class="form-control" type="text" name="pic" value="{{ product.pic }}">
+						</div>
+
+						<div class="form-check">	
+							<input class="form-check-input" type="checkbox" name="discontinued" {%if product.discontinued == 1%} checked{%endif%}>
+							<label class="form-check-label" >discontinued</label>
+						</div>
+						
+						<button type="submit" class="btn btn-primary" name="edit">save changes</button>
+					</form>
+				</fieldset>
 			{%else%}
 				<h1>{{ product.pName }}</h1>
 				{% if product.descr %}
