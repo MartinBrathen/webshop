@@ -45,10 +45,10 @@ CREATE TABLE IF NOT EXISTS Orders(
 
 CREATE TABLE IF NOT EXISTS Transactions(
     productID int,
-    amount int,
+    amount int unsigned,
     id int auto_increment,
     orderID int,
-    cost int,
+    cost int unsigned,
     PRIMARY KEY (id),
     FOREIGN KEY (orderID) REFERENCES Orders(id),
     FOREIGN KEY (productID) REFERENCES Products(ID)
