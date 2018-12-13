@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS Products(
     pic varchar(255),
     discontinued bit DEFAULT 0,
     ID int auto_increment,
-    CHECK (stock >= 0)
+    CHECK (stock >= 0),
     PRIMARY KEY (ID)
 );
 
