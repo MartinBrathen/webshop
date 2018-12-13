@@ -23,8 +23,6 @@ db = mysql.connector.connect(
     port=3306,
     user="root",
     passwd="D0018Epassword",
-
-
     database="webshopDB"
 )
 
@@ -175,18 +173,19 @@ def register():
 @app.route("/account", methods = ['GET','POST'])
 def account():
 
-	if 'ID' in session:
-		c.execute("select * from Users where ID = %s", (session['ID'],))
-		f = c.fetchone()
-		print(f[2])
-		
-		fName = f[0]
-		lName = f[1]
-		email = f[2]
-		adress = f[4]
-		country = f[5]
-		phone = f[6]
-		if request.method == 'POST':
+    if 'ID' in session:
+        db.reconnect()
+        cur = db.cursor()
+        cur.execute("select * from Users where ID = %s", (session['ID'],))
+        f = cur.fetchone()
+        
+        fName = f[0]
+        lName = f[1]
+        email = f[2]
+        adress = f[4]
+        country = f[5]
+        phone = f[6]
+        if request.method == 'POST':
 			
 			fName = request.form['firstname']
 
@@ -201,7 +200,7 @@ def account():
 			sql = "Update Users set fName = %s, lName = %s, adress = %s, country = %s, phone = %s where ID = %s "
 
 			val = (fName,lName,adress,country,phone,session['ID'])
-			c.execute(sql,val)
+			cur.execute(sql,val)
 			db.commit()
 			flash('Account updated')
 	
