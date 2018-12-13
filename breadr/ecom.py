@@ -22,7 +22,7 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    passwd="@Tigrar10",
+    #passwd="D0018Epassword",
     database="webshopDB"
 )
 
@@ -40,8 +40,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS Users(
     phone varchar(32),
     admin bit,
     ID int AUTO_INCREMENT,
-    PRIMARY KEY (ID),
-    UNIQUE (email)
+    PRIMARY KEY (ID)
 );""")
 
 c.execute("""CREATE TABLE IF NOT EXISTS Products(
@@ -172,41 +171,55 @@ def register():
 
 @app.route("/account", methods = ['GET','POST'])
 def account():
-
     if 'ID' in session:
         db.reconnect()
         cur = db.cursor()
         cur.execute("select * from Users where ID = %s", (session['ID'],))
         f = cur.fetchone()
-        
+        print(f)
         fName = f[0]
         lName = f[1]
         email = f[2]
         adress = f[4]
+
         country = f[5]
         phone = f[6]
         if request.method == 'POST':
-			
-			fName = request.form['firstname']
+            if 'button_update' in request.form:	
+    			fName = request.form['firstname']
+    			lName = request.form['lastname']
+    			adress = request.form['adress']
+    			country = request.form['country']
+    			phone = request.form['phone']
+    			sql = "Update Users set fName = %s, lName = %s, adress = %s, country = %s, phone = %s where ID = %s "
 
-			lName = request.form['lastname']
-			
-			adress = request.form['adress']
-			country = request.form['country']
-			phone =request.form['phone']
+    			val = (fName,lName,adress,country,phone,session['ID'])
+    			cur.execute(sql, val)
+    			db.commit()
+    			flash('Account updated', 'success')
 
-			
+            if 'delete_account' in request.form:
+                print("delete")
+                sql = """update Users
+                set fName = %s,
+                lName = %s,
+                email = "NULL",
+                pWord = "NULL",
+                adress = %s,
+                country = %s,
+                phone = %s,
+                admin = %s
+                where ID = %s;"""
+                val = (None, None, None, None, None, None, session['ID'])
+                db.reconnect()
+                cur = db.cursor()
+                cur.execute(sql, val)
+                db.commit()
+                cur.close()
+                return redirect(url_for('logout'))
+
+	return render_template('account.html', firstname = fName, lastname = lName, adress = adress, country=country, phone=phone, email = email)
 	
-			sql = "Update Users set fName = %s, lName = %s, adress = %s, country = %s, phone = %s where ID = %s "
-
-			val = (fName,lName,adress,country,phone,session['ID'])
-			cur.execute(sql,val)
-			db.commit()
-			flash('Account updated')
-        return render_template('account.html' ,firstname = fName, lastname = lName, adress = adress, country=country, phone=phone, email = email)
-    else:
-        flash('You are not logged in!','Danger')
-        return redirect(url_for('home'))   
 
 
 
@@ -486,7 +499,7 @@ def basket():
     items = []
     if 'ID' in session:
         val = session['ID']
-        print(session['ID'])
+
         sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
 
         db.reconnect()
@@ -540,10 +553,8 @@ def basket():
                 return redirect(url_for('checkout'))
 
             cur.close()
-        return render_template('basket.html', items = items, grandTotal = grandTotal)
-    else:
-        flash('You are not logged in!','Danger')
-        return redirect(url_for('home'))
+			
+    return render_template('basket.html', items = items, grandTotal = grandTotal)
 
 
 @app.route("/checkout", methods=['GET','POST',''])
@@ -714,10 +725,7 @@ def update_basket(userID = None):
     cur.close()
     session['basket'] = total_in_basket
 
-@app.errorhandler(404) 
-# inbuilt function which takes error as parameter 
-def not_found(e): 
-    return render_template("404.html") 
+
 
 
 
