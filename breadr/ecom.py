@@ -124,7 +124,7 @@ def home():
 
         if request.args.get('in_stock') == 'on':
             in_stock =  1
-        
+
         if request.args.get('product_name') != None:
             product_name = request.args.get('product_name')
 
@@ -146,7 +146,7 @@ def register():
     if 'id' in session:
         flash('you already have an account', 'danger')
         return redirect(url_for('home'))
-    
+
     if request.method =='POST':
         f = request.form
         if f['pass1'] != f['pass2']:
@@ -157,6 +157,7 @@ def register():
         if cur.fetchone():
             return redirect(url_for('register', email_msg="email already taken"))
         sql = "insert into Users (email, pWord, admin) values (%s, %s, %s);"
+
 
         pass1 = hashlib.sha224(f['pass1'].encode('utf-8')).hexdigest() # sha224 hash of password
         val = (f['email'], pass1, 1 if f['email'] == 'admin@admin.admin' else 0)
@@ -169,13 +170,53 @@ def register():
     return render_template('register.html', title='Ooh new member', msg=msg)
 
 
+@app.route("/account", methods = ['GET','POST'])
+def account():
+
+    if 'ID' in session:
+        db.reconnect()
+        cur = db.cursor()
+        cur.execute("select * from Users where ID = %s", (session['ID'],))
+        f = cur.fetchone()
+        
+        fName = f[0]
+        lName = f[1]
+        email = f[2]
+        adress = f[4]
+        country = f[5]
+        phone = f[6]
+        if request.method == 'POST':
+			
+			fName = request.form['firstname']
+
+			lName = request.form['lastname']
+			
+			adress = request.form['adress']
+			country = request.form['country']
+			phone =request.form['phone']
+
+			
+	
+			sql = "Update Users set fName = %s, lName = %s, adress = %s, country = %s, phone = %s where ID = %s "
+
+			val = (fName,lName,adress,country,phone,session['ID'])
+			cur.execute(sql,val)
+			db.commit()
+			flash('Account updated')
+	
+	return render_template('account.html' ,firstname = fName, lastname = lName, adress = adress, country=country, phone=phone, email = email)
+	
+
+
+
+
 
 @app.route("/login", methods=['GET','POST'])
 def login():
     if 'ID' in session:
         flash('you are already logged in', 'danger')
         return redirect(url_for('home'))
-        
+
     elif request.method == 'POST':
         femail = request.form['email']
         fpassw = hashlib.sha224(request.form['pass'].encode('utf-8')).hexdigest()
@@ -188,17 +229,18 @@ def login():
         if result:
             result = dict(zip(('pass', 'ID', 'admin'), result))
             #password är rätt
-            if result['pass'] == fpassw:        
+            if result['pass'] == fpassw:
                 session['admin'] = result['admin']
                 flash('Successfully logged in{}'.format(' with admin privileges' if result['admin'] == 1 else ''), 'success')
-                session['ID'] = result['ID'] 
-                update_basket()            
-                return redirect(url_for('home'))  
-            #fel password                           
+                session['ID'] = result['ID']
+                update_basket()
+                return redirect(url_for('home'))
+            #fel password
             else:
                 return redirect(url_for('login', passw_msg='wrong password', email = femail))
         #fel email
         else:
+
             return redirect(url_for('login', email_msg='wrong email'))
     
     msg = request.args  
@@ -290,12 +332,14 @@ def order(orderID):
 @app.route("/product/<int:productID>", methods=['GET', 'POST'])
 def product(productID):
     sql = "select * from Products where ID=%s;"
+
     db.reconnect()
     cur = db.cursor()
     cur.execute(sql, (productID,))
     product = cur.fetchone()
     cur.close()
 	
+
     if product:
         keys = ('pName', 'stock', 'price', 'descr', 'pic', 'discontinued', 'ID')
 
@@ -314,7 +358,7 @@ def product(productID):
         for rating, ID in ratings:
             if rating != None:
                 tot_rating += 2*rating-1
-                
+
             if ID == userID:
                 my_rating = rating
 
@@ -325,6 +369,7 @@ def product(productID):
         keys = ('commentS', 'tStamp', 'email', 'id')
         for comment in cur.fetchall():
             comments.append(dict(zip(keys, comment)))
+
         cur.close()
 		
         if 'ID' in session:  
@@ -332,6 +377,7 @@ def product(productID):
                 vote_sql = """insert into Ratings (rating, userID, productID) values (%s, %s, %s) 
                     on duplicate key update rating = %s;""" 
                 cur = db.cursor()
+
                 if 'up' in request.form:
                     #updoot code
                     my_rating = None if my_rating == 1 else 1
@@ -353,8 +399,10 @@ def product(productID):
                     #place in cart code
                     f = request.form
                     quantity = int(dict(f)['quantity'][0])
+
                     if quantity >= 0:
                         sql = """insert into Basket (userID, productID, amount) values (%s, %s, %s) 
+
                         on duplicate key update amount = amount + %s;"""
                         val = (session['ID'], productID, quantity, quantity)
                         cur.execute(sql, val)
@@ -387,7 +435,7 @@ def product(productID):
                     db.commit()
                     flash("Changes committed!", 'success')
                     return redirect(url_for('product', productID=productID))
-                
+
                 elif 'delete' in request.form:
                     cur.execute("""update Comments set commentS = "DELETED" where ID = %s;""", (request.form.get('comment_ID'),))
                     db.commit()
@@ -425,7 +473,7 @@ def addProduct():
             except Exception:
                 flash("Could not add new product", 'danger')
             return redirect('addProduct')
-            
+
         return render_template('addProduct.html')
     else:
         flash('you do not have access to that page', 'danger')
@@ -437,8 +485,9 @@ def basket():
     items = []
     if 'ID' in session:
         val = session['ID']
-        
+
         sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
+
         db.reconnect()
         cur  = db.cursor()
         cur.execute(sql,(val,))
@@ -447,7 +496,9 @@ def basket():
         for fitem in cur.fetchall():
             grandTotal = grandTotal + fitem[1]*fitem[3]
             items.append(dict(zip(keys, fitem)))
+
         cur.close() 
+
         if request.method == 'POST':
             cur = db.cursor()
             if 'update' in request.form:
@@ -462,6 +513,7 @@ def basket():
                     except Exception:
                         flash('Error updating basket','danger')
                 elif int(newAmount) <= 0:
+
                     cur.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['update']))
                     db.commit()
                 elif int(newAmount) > int(inStock):
@@ -472,19 +524,24 @@ def basket():
                         flash('Error updating basket','danger')
                 update_basket()
                 cur.close()
+
                 return redirect(url_for('basket'))
             elif 'delete' in request.form:
                 cur.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['delete']))
                 db.commit()
                 update_basket()
+
                 cur.close()
+
                 return redirect(url_for('basket'))
             elif 'checkout' in request.form:
                 cur.close()
                 return redirect(url_for('checkout'))
+
             cur.close()
 			
     return render_template('basket.html', items = items, grandTotal = grandTotal)
+
 
 @app.route("/checkout", methods=['GET','POST',''])
 def checkout():
@@ -494,6 +551,7 @@ def checkout():
     items = []
     sufficientInfo = False
     if 'ID' in session:
+
         idTuple = (session['ID'],)
 
         sql = """SELECT sum(Basket.amount*Products.price),sum(Basket.amount) FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
@@ -518,6 +576,7 @@ def checkout():
         if tmp:
             flash('Quantity of one or more items in your basket exceed our stock for that item.', 'danger')
             return redirect(url_for('basket'))
+
 
         sql = """SELECT Users.fName, Users.lName, Users.adress, Users.country, Users.phone, Users.email FROM Users WHERE ID = %s"""
         cur = db.cursor()
@@ -581,6 +640,14 @@ def checkout():
 
     return render_template('checkout.html', grandTotal = grandTotal, user = user, sufficientInfo = sufficientInfo)
 
+
+
+
+
+
+ 
+
+
 @app.route("/add_admin", methods=['GET','POST'])
 def add_admin():
     #endast admin får vara på denna sida
@@ -610,8 +677,7 @@ def add_admin():
             else:
                 print("det fanns inte")
                 return redirect(url_for('add_admin', email_msg="no such email found"))
-			
-			
+
             return redirect('add_admin')
         msg = request.args
         print("msg: {}".format(msg))
@@ -619,6 +685,7 @@ def add_admin():
     else:
         flash('you do not have access to that page', 'danger')
         return redirect(url_for('home'))
+
 
 
 #returns a werkzeug.MultiDict where values of 'NULL' 'None' '' are actually None.
@@ -649,24 +716,5 @@ def update_basket(userID = None):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
     app.run(debug = True)
-

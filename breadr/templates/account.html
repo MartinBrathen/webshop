@@ -1,0 +1,38 @@
+{%extends "layout.html"%}
+{%block content%}
+ 
+
+   <h1> Account information </h1>
+
+
+      <label> Username:  </label> {{email}}
+
+   
+
+      <form method="Post" action="">
+         </span><br>Forename</label> <input type="text" name="firstname" id= "fname-id" value = "{{ firstname }}" " style="width: 200px;"  >
+
+         *<br><label for="user-lastname" id="user-lastname-id">Last name</label> <input type="text" name="lastname" id="lastname-id" value = "{{lastname}}"" style="width: 200px;">
+
+
+
+        
+         *<br><label for="addr" id="addr-id">Adress</label> <input type="text" name="adress" id="adr_id" value="{{adress}}" style="width: 200px;">
+         
+         *<br><label for="user-cntry" id="user-cntry-id">Country</label> <input type="text" name="country" id="cntry-id" value = "{{country}}" style="width: 200px;">
+         
+
+         *<br><label for="Phone" id="Phone_id">Phone number</label> <input type="text" name="phone" id="phn-id" value="{{phone}}" style="width: 200px;">
+
+         </select>
+
+
+        <br><input type="submit" name="button_update" class="Button_class" id="Save_button" value="Save">
+      </form>
+   </fieldset>
+        
+
+
+
+
+{%endblock content%}
