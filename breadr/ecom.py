@@ -22,7 +22,7 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    passwd="D0018Epass",
+    passwd="D0018Epassword",
     database="webshopDB"
 )
 
@@ -452,7 +452,7 @@ def basket():
                 
                 cur.execute("""SELECT Products.stock FROM Products WHERE Products.ID=%s""", (request.form['update'],))
                 inStock=cur.fetchone()[0]
-                if int(inStock) > int(newAmount) > 0:
+                if int(inStock) >= int(newAmount) > 0:
                     cur.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s;",(newAmount, session['ID'], request.form['update']))
                     db.commit()
                 elif int(newAmount) <= 0:
@@ -504,7 +504,7 @@ def checkout():
         cur.close()
 		
         if tmp:
-            flash('Quantity of one of more items exceed our current stock for said item', 'danger')
+            flash('Quantity of one or more items in your basket exceed our stock for that item.', 'danger')
             return redirect(url_for('basket'))
 
         sql = """SELECT Users.fName, Users.lName, Users.adress, Users.country, Users.phone, Users.email FROM Users WHERE ID = %s"""
