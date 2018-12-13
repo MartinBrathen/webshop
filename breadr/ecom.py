@@ -464,6 +464,12 @@ def basket():
                 elif int(newAmount) <= 0:
                     cur.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['update']))
                     db.commit()
+                elif int(newAmount) > int(inStock):
+                    try:
+                        cur.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s;",(inStock, session['ID'], request.form['update']))
+                        db.commit()
+                    except Exception:
+                        flash('Error updating basket','danger')
                 update_basket()
                 cur.close()
                 return redirect(url_for('basket'))
