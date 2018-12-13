@@ -3,8 +3,8 @@ USE webshopDB;
 
 CREATE TABLE IF NOT EXISTS Products(
     pName varchar(32),
-    stock int,
-    price int,
+    stock int unsigned,
+    price int unsigned,
     descr varchar(255),
     pic varchar(255),
     discontinued bit DEFAULT 0,
@@ -28,8 +28,7 @@ CREATE TABLE IF NOT EXISTS Users(
 CREATE TABLE IF NOT EXISTS Basket(
     userID int,
     productID int,
-    amount int,
-	CHECK (amount > 0),
+    amount int unsigned,
     PRIMARY KEY (userID, productID),
     FOREIGN KEY (userID) REFERENCES Users(ID),
     FOREIGN KEY (productID) REFERENCES Products(ID)
@@ -46,10 +45,10 @@ CREATE TABLE IF NOT EXISTS Orders(
 
 CREATE TABLE IF NOT EXISTS Transactions(
     productID int,
-    amount int,
+    amount int unsigned,
     id int auto_increment,
     orderID int,
-    cost int,
+    cost int unsigned,
     PRIMARY KEY (id),
     FOREIGN KEY (orderID) REFERENCES Orders(id),
     FOREIGN KEY (productID) REFERENCES Products(ID)
