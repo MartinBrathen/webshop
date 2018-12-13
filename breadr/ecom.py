@@ -353,7 +353,7 @@ def product(productID):
                     #place in cart code
                     f = request.form
                     quantity = int(dict(f)['quantity'][0])
-                    if quantity != 0:
+                    if quantity >= 0:
                         sql = """insert into Basket (userID, productID, amount) values (%s, %s, %s) 
                         on duplicate key update amount = amount + %s;"""
                         val = (session['ID'], productID, quantity, quantity)
@@ -417,10 +417,13 @@ def addProduct():
             val = (f['pName'], f['stock'], f['price'], f['descr'], f['pic'])
             db.reconnect()
             cur = db.cursor()
-            cur.execute(sql, val)
-            db.commit()
-            cur.close()
-            flash("New product '{}' added, you can edit data on product page".format(f['pName']), 'success')
+            try:
+                cur.execute(sql, val)
+                db.commit()
+                cur.close()
+                flash("New product '{}' added, you can edit data on product page".format(f['pName']), 'success')
+            except Exception:
+                flash("Could not add new product", 'danger')
             return redirect('addProduct')
             
         return render_template('addProduct.html')
@@ -453,11 +456,14 @@ def basket():
                 cur.execute("""SELECT Products.stock FROM Products WHERE Products.ID=%s""", (request.form['update'],))
                 inStock=cur.fetchone()[0]
                 if int(inStock) >= int(newAmount) > 0:
-                    cur.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s;",(newAmount, session['ID'], request.form['update']))
-                    db.commit()
+                    try:
+                        cur.execute("UPDATE Basket SET Basket.amount=%s WHERE Basket.userID=%s AND Basket.productID=%s;",(newAmount, session['ID'], request.form['update']))
+                        db.commit()
+                    except Exception:
+                        flash('Error updating basket','danger')
                 elif int(newAmount) <= 0:
                     cur.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['update']))
-                    db.commit()  
+                    db.commit()
                 update_basket()
                 cur.close()
                 return redirect(url_for('basket'))
@@ -530,27 +536,34 @@ def checkout():
                     flash('Quantity of one of more items exceed our current stock for said item', 'danger')
                     return redirect(url_for('basket'))
 
-                cur.execute("INSERT INTO Orders (id, orderDate,userID) VALUES (NULL,CURRENT_DATE,%s);",(session['ID'],))
-                cur.execute("SELECT LAST_INSERT_ID()")
-                orderID = cur.fetchone()[0]
+                try:
 
-                sql = """SELECT Basket.amount, Products.ID, Products.price, Products.stock FROM Basket INNER JOIN Products 
-                ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
-                cur.execute(sql,idTuple)
-                items = cur.fetchall()
-                for item in items:
-                    cost = int(item[2])*int(item[0])
-                    cur.execute("""INSERT INTO Transactions (productID,amount,orderID,cost) VALUES (%s,%s,%s,%s)""",(item[1],item[0],orderID,cost))
-                    newStock = int(item[3]) - int(item[0])
-                    cur.execute("""UPDATE Products SET Products.stock = %s WHERE Products.ID = %s""",(newStock,item[1]))
+                    cur.execute("INSERT INTO Orders (id, orderDate,userID) VALUES (NULL,CURRENT_DATE,%s);",(session['ID'],))
+                    cur.execute("SELECT LAST_INSERT_ID()")
+                    orderID = cur.fetchone()[0]
+
+                    sql = """SELECT Basket.amount, Products.ID, Products.price, Products.stock FROM Basket INNER JOIN Products 
+                    ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
+                    cur.execute(sql,idTuple)
+                    items = cur.fetchall()
+                    for item in items:
+                        cost = int(item[2])*int(item[0])
+                        cur.execute("""INSERT INTO Transactions (productID,amount,orderID,cost) VALUES (%s,%s,%s,%s)""",(item[1],item[0],orderID,cost))
+                        newStock = int(item[3]) - int(item[0])
+                        cur.execute("""UPDATE Products SET Products.stock = %s WHERE Products.ID = %s""",(newStock,item[1]))
 
 
-                cur.execute("DELETE FROM Basket WHERE Basket.userID=%s;",(session['ID'],))
-                db.commit()
-                cur.close()
-                flash('Order has been placed', 'success')
-                update_basket()
-                return redirect(url_for('home'))
+                    cur.execute("DELETE FROM Basket WHERE Basket.userID=%s;",(session['ID'],))
+                    db.commit()
+                    cur.close()
+                    flash('Order has been placed', 'success')
+                    update_basket()
+                    return redirect(url_for('home'))
+                except Exception:
+                    db.rollback()
+                    cur.close()
+                    flash('Ordering failed','Danger')
+                    return redirect(url_for('basket'))
             elif 'basket' in request.form:
                 return redirect(url_for('basket'))
             elif 'account' in request.form:
