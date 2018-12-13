@@ -21,8 +21,8 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    #passwd="D0018Epassword",
-    passwd="D0018Epass",
+    passwd="D0018Epassword",
+    #passwd="D0018Epass",
     database="webshopDB"
 )
 
@@ -122,7 +122,7 @@ def home():
 
         if request.args.get('in_stock') == 'on':
             in_stock =  1
-        
+
         if request.args.get('product_name') != None:
             product_name = request.args.get('product_name')
 
@@ -140,7 +140,7 @@ def register():
     if 'id' in session:
         flash('you already have an account', 'danger')
         return redirect(url_for('home'))
-    
+
     if request.method =='POST':
         f = request.form
         c.execute("select * from Users where email = %s;", (f['email'],))
@@ -149,11 +149,50 @@ def register():
         sql = "insert into Users (email, pWord, admin) values (%s, %s, %s);"
         val = (f['email'], f['pass'], 1 if f['email'] == 'admin@admin.admin' else 0)
         c.execute(sql, val)
-        db.commit()                   
+        db.commit()
         flash('User successfully created! customer id: {}'.format(c.lastrowid), 'success')
         return redirect(url_for('login'))
-        
+
     return render_template('register.html', title='Ooh new member')
+
+
+@app.route("/account", methods = ['GET','POST'])
+def account():
+
+	if 'ID' in session:
+		c.execute("select * from Users where ID = %s", (session['ID'],))
+		f = c.fetchone()
+		print(f[2])
+		
+		fName = f[0]
+		lName = f[1]
+		email = f[2]
+		adress = f[4]
+		country = f[5]
+		phone = f[6]
+		if request.method == 'POST':
+			
+			fName = request.form['firstname']
+
+			lName = request.form['lastname']
+			
+			adress = request.form['adress']
+			country = request.form['country']
+			phone =request.form['phone']
+
+			
+	
+			sql = "Update Users set fName = %s, lName = %s, adress = %s, country = %s, phone = %s where ID = %s "
+
+			val = (fName,lName,adress,country,phone,session['ID'])
+			c.execute(sql,val)
+			db.commit()
+			flash('Account updated')
+	
+	return render_template('account.html' ,firstname = fName, lastname = lName, adress = adress, country=country, phone=phone, email = email)
+	
+
+
 
 
 
@@ -162,7 +201,7 @@ def login():
     if 'ID' in session:
         flash('you are already logged in', 'danger')
         return redirect(url_for('home'))
-        
+
     elif request.method == 'POST':
         femail = request.form['email']
         fpassw = request.form['pass']
@@ -173,21 +212,21 @@ def login():
         if result:
             result = dict(zip(('pass', 'ID', 'admin'), result))
             #password är rätt
-            if result['pass'] == fpassw:        
+            if result['pass'] == fpassw:
                 session['admin'] = result['admin']
                 flash('Successfully logged in{}'.format(' with admin privileges' if result['admin'] == 1 else ''), 'success')
-                session['ID'] = result['ID'] 
-                update_basket()            
-                return redirect(url_for('home'))  
-            #fel password                           
+                session['ID'] = result['ID']
+                update_basket()
+                return redirect(url_for('home'))
+            #fel password
             else:
                 return render_template('login.html', passwmsg='wrong password', email = femail)
         #fel email
         else:
             return render_template('login.html', emailmsg='wrong email')
-        
-        
-        
+
+
+
     return render_template('login.html')
 
 
@@ -198,7 +237,7 @@ def product(productID):
     sql = "select * from Products where ID=%s;"
     c.execute(sql, (productID,))
     product = c.fetchone()
-    
+
     if product:
         keys = ('pName', 'stock', 'price', 'descr', 'pic', 'discontinued', 'ID')
 
@@ -215,7 +254,7 @@ def product(productID):
         for rating, ID in ratings:
             if rating != None:
                 tot_rating += 2*rating-1
-                
+
             if ID == userID:
                 my_rating = rating
 
@@ -226,10 +265,10 @@ def product(productID):
         for comment in c.fetchall():
             comments.append(dict(zip(keys, comment)))
 
-        if 'ID' in session:  
+        if 'ID' in session:
             if request.method == 'POST':
-                vote_sql = """insert into Ratings (rating, userID, productID) values (%s, %s, %s) 
-                    on duplicate key update rating = %s;""" 
+                vote_sql = """insert into Ratings (rating, userID, productID) values (%s, %s, %s)
+                    on duplicate key update rating = %s;"""
 
                 if 'up' in request.form:
                     #updoot code
@@ -252,7 +291,7 @@ def product(productID):
                     f = request.form
                     quantity = int(dict(f)['quantity'][0])
                     if quantity != 0:
-                        sql = """insert into Basket (userID, productID, amount) values (%s, %s, %s) 
+                        sql = """insert into Basket (userID, productID, amount) values (%s, %s, %s)
                         on duplicate key update amount = amount + %s;"""
                         val = (session['ID'], productID, quantity, quantity)
                         c.execute(sql, val)
@@ -285,7 +324,7 @@ def product(productID):
                     db.commit()
                     flash("Changes committed!", 'success')
                     return redirect(url_for('product', productID=productID))
-                
+
                 elif 'delete' in request.form:
                     c.execute("""update Comments set commentS = "DELETED" where ID = %s;""", (request.form.get('comment_ID'),))
                     db.commit()
@@ -314,7 +353,7 @@ def addProduct():
             db.commit()
             flash("New product '{}' added, you can edit data on product page".format(f['pName']), 'success')
             return redirect('addProduct')
-            
+
         return render_template('addProduct.html')
     else:
         flash('you do not have access to that page', 'danger')
@@ -326,17 +365,17 @@ def basket():
     items = []
     if 'ID' in session:
         val = session['ID']
-        
+
         sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
         c.execute(sql,(val,))
-        
+
         keys = ('userID', 'amount', 'productID', 'productPrice', 'productName')
         for fitem in c.fetchall():
             grandTotal = grandTotal + fitem[1]*fitem[3]
             items.append(dict(zip(keys, fitem)))
-    
 
-      
+
+
         if request.method == 'POST':
             if 'update' in request.form:
                 newAmount = request.form['amount']
@@ -345,18 +384,22 @@ def basket():
                     db.commit()
                 elif int(newAmount) <= 0:
                     c.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['update']))
-                    db.commit()  
-                update_basket() 
+                    db.commit()
+                update_basket()
                 return redirect(url_for('basket'))
             elif 'delete' in request.form:
                 c.execute("DELETE FROM Basket WHERE Basket.userID=%s AND Basket.productID=%s;",(session['ID'],request.form['delete']))
                 db.commit()
-                update_basket() 
+                update_basket()
                 return redirect(url_for('basket'))
             elif 'checkout' in request.form:
                 return redirect(url_for('checkout'))
-    
-    return render_template('basket.html', items = items, grandTotal = grandTotal)
+
+
+
+
+
+    return  render_template('basket.html', items = items, grandTotal = grandTotal)
 
 @app.route("/checkout", methods=['GET','POST',''])
 def checkout():
@@ -366,10 +409,10 @@ def checkout():
     sufficientInfo = False
     if 'ID' in session:
         val = session['ID']
-        
+
         sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
         c.execute(sql,(val,))
-        
+
         keys = ('userID', 'amount', 'productID', 'productPrice', 'productName')
         for fitem in c.fetchall():
             grandTotal = grandTotal + fitem[1]*fitem[3]
@@ -413,6 +456,14 @@ def checkout():
 
     return render_template('checkout.html', items = items, grandTotal = grandTotal, user = user, sufficientInfo = sufficientInfo)
 
+
+
+
+
+
+ 
+
+
 @app.route("/add_admin", methods=['GET','POST'])
 def add_admin():
     #endast admin får vara på denna sida
@@ -437,7 +488,7 @@ def add_admin():
             else:
                 print("det fanns inte")
                 return redirect(url_for('add_admin', email_msg="no such email found"))
-           
+
             return redirect('add_admin')
         msg = request.args
         print("msg: {}".format(msg))
@@ -445,6 +496,7 @@ def add_admin():
     else:
         flash('you do not have access to that page', 'danger')
         return redirect(url_for('home'))
+
 
 
 #returns a werkzeug.MultiDict where values of 'NULL' 'None' '' are actually None.
@@ -472,24 +524,5 @@ def update_basket(userID = None):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
     app.run(debug = True)
-
