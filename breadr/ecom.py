@@ -203,9 +203,10 @@ def account():
 			cur.execute(sql,val)
 			db.commit()
 			flash('Account updated')
-	
-	return render_template('account.html' ,firstname = fName, lastname = lName, adress = adress, country=country, phone=phone, email = email)
-	
+        return render_template('account.html' ,firstname = fName, lastname = lName, adress = adress, country=country, phone=phone, email = email)
+    else:
+        flash('You are not logged in!','Danger')
+        return redirect(url_for('home'))   
 
 
 
@@ -714,7 +715,6 @@ def update_basket(userID = None):
     session['basket'] = total_in_basket
 
 @app.errorhandler(404) 
-  
 # inbuilt function which takes error as parameter 
 def not_found(e): 
     return render_template("404.html") 
