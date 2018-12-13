@@ -22,7 +22,7 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    passwd="D0018Epassword",
+    passwd="@Tigrar10",
     database="webshopDB"
 )
 
@@ -485,7 +485,7 @@ def basket():
     items = []
     if 'ID' in session:
         val = session['ID']
-
+        print(session['ID'])
         sql = """SELECT Basket.userID, Basket.amount, Products.ID, Products.price, Products.pName FROM Basket INNER JOIN Products ON Basket.productID=Products.ID WHERE Basket.userID = %s;"""
 
         db.reconnect()
@@ -539,8 +539,10 @@ def basket():
                 return redirect(url_for('checkout'))
 
             cur.close()
-			
-    return render_template('basket.html', items = items, grandTotal = grandTotal)
+        return render_template('basket.html', items = items, grandTotal = grandTotal)
+    else:
+        flash('You are not logged in!','Danger')
+        return redirect(url_for('home'))
 
 
 @app.route("/checkout", methods=['GET','POST',''])
@@ -711,7 +713,11 @@ def update_basket(userID = None):
     cur.close()
     session['basket'] = total_in_basket
 
-
+@app.errorhandler(404) 
+  
+# inbuilt function which takes error as parameter 
+def not_found(e): 
+    return render_template("404.html") 
 
 
 
