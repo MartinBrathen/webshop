@@ -185,18 +185,18 @@ def account():
         country = f[5]
         phone = f[6]
         if request.method == 'POST':
+            
             if 'button_update' in request.form:	
-    			fName = request.form['firstname']
-    			lName = request.form['lastname']
-    			adress = request.form['adress']
-    			country = request.form['country']
-    			phone = request.form['phone']
-    			sql = "Update Users set fName = %s, lName = %s, adress = %s, country = %s, phone = %s where ID = %s "
-
-    			val = (fName,lName,adress,country,phone,session['ID'])
-    			cur.execute(sql, val)
-    			db.commit()
-    			flash('Account updated', 'success')
+                fName = request.form['firstname']
+                lName = request.form['lastname']
+                adress = request.form['adress']
+                country = request.form['country']
+                phone = request.form['phone']
+                sql = "Update Users set fName = %s, lName = %s, adress = %s, country = %s, phone = %s where ID = %s "
+                val = (fName,lName,adress,country,phone,session['ID'])
+                cur.execute(sql, val)
+                db.commit()
+                flash('Account updated', 'success')
 
             if 'delete_account' in request.form:
                 print("delete")
@@ -217,8 +217,7 @@ def account():
                 db.commit()
                 cur.close()
                 return redirect(url_for('logout'))
-
-	return render_template('account.html', firstname = fName, lastname = lName, adress = adress, country=country, phone=phone, email = email)
+    return render_template('account.html', firstname = fName, lastname = lName, adress = adress, country=country, phone=phone, email = email)
 	
 
 
