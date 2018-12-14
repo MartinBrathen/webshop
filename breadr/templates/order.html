@@ -16,7 +16,7 @@
         <tbody>
             {%for transaction in transactions%}
                 <tr>
-                    <th scope="row">{{transaction.productID}}</th>
+                    <th scope="row"><a href="{{ url_for('product', productID=transaction.productID) }}"><h4>{{transaction.productID}}</h4></a></th>
                     <td>{{transaction.amount}}</td>
                     <td>{{transaction.cost}}</td>
                 </tr>
@@ -24,7 +24,9 @@
             
         </tbody>
     </table>
-    <a href="{{url_for('order_manager')}}">Go back to manager</a>
+    {%if isAdmin%}
+        <a href="{{url_for('order_manager', Shipped='on', Processing='on', Pending='on')}}">Go back to manager</a>
+    {% endif %}
 
    
 

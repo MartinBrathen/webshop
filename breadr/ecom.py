@@ -176,14 +176,27 @@ def account():
         cur = db.cursor()
         cur.execute("select * from Users where ID = %s", (session['ID'],))
         f = cur.fetchone()
-        print(f)
+    
+        items = []
+
+        cur.execute("select * from Orders where userID = %s",(session['ID'],))
+        keys = ('order_id', 'orderStatus', 'orderDate', 'userID')
+        for item in cur.fetchall():
+            items.append(dict(zip(keys, item)))
+
+
+
+
         fName = f[0]
         lName = f[1]
         email = f[2]
         adress = f[4]
-
         country = f[5]
         phone = f[6]
+        
+
+
+
         if request.method == 'POST':
             
             if 'button_update' in request.form:	
@@ -217,7 +230,7 @@ def account():
                 db.commit()
                 cur.close()
                 return redirect(url_for('logout'))
-    return render_template('account.html', firstname = fName, lastname = lName, adress = adress, country=country, phone=phone, email = email)
+    return render_template('account.html', firstname = fName, lastname = lName, adress = adress, country=country, phone=phone, email = email, items = items)
 	
 
 
@@ -306,6 +319,7 @@ def order_manager():
 
 @app.route("/order/<int:orderID>")
 def order(orderID):
+    isAdmin=0
     order_keys=('id', 'orderStatus', 'orderDate', 'userID')
     db.reconnect()
     cur  = db.cursor()
@@ -315,6 +329,8 @@ def order(orderID):
     if order:
         order = dict(zip(order_keys, order))
         if 'ID' in session and (order.get('userID') == session['ID'] or session['admin'] == 1):
+            if session['admin']:
+                isAdmin= 1
             #access granted ( to order user and admin)
             transaction_keys = 'productID', 'amount', 'cost'
             sql = """select productID, amount, cost 
@@ -328,7 +344,7 @@ def order(orderID):
             for transaction in cur.fetchall():
                 transactions.append(dict(zip(transaction_keys, transaction)))
             cur.close()
-            return render_template('order.html', order = order, transactions = transactions)
+            return render_template('order.html', order = order, transactions = transactions,isAdmin=isAdmin)
             
         else:
             #access denied
