@@ -645,8 +645,7 @@ def checkout():
             elif 'basket' in request.form:
                 return redirect(url_for('basket'))
             elif 'account' in request.form:
-                #return redirect(url_for('account'))
-                print("not done")
+                return redirect(url_for('account'))
 
 
 
