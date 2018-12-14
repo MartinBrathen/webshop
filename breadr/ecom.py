@@ -22,7 +22,7 @@ db = mysql.connector.connect(
     host="localhost",
     port=3306,
     user="root",
-    passwd="D0018Epassword",
+    passwd="@Tigrar10",
     database="webshopDB"
 )
 
@@ -739,7 +739,10 @@ def update_basket(userID = None):
     cur.close()
     session['basket'] = total_in_basket
 
-
+@app.errorhandler(404) 
+# inbuilt function which takes error as parameter 
+def not_found(e): 
+    return render_template("404.html") 
 
 
 
